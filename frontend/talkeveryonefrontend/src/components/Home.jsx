@@ -31,7 +31,7 @@ function Home(){
         <>  
             
             <div className="flex h-screen">
-                <div className="h-screen w-[25%]">
+                <div className=" w-[25%]">
                     <div className="mx-1 my-2 flex justify-between px-1">
                         <h2 className="font-bold text-xl">Chats</h2>
                         <div className="flex">
@@ -39,15 +39,17 @@ function Home(){
                             <CreateGroup/>
                         </div>
                     </div>
-                    <Messages/>
-                    <div className="fixed bottom-0 flex justify-start font-bold bg-black text-white">
-                        <p>
+                    <div className="flex-1 overflow-y-auto">
+                        <Messages />
+                    </div>
+                    <div className="fixed bottom-0 p-1 w-[25%] flex justify-start font-bold bg-black text-white">
+                        <p >
                              {userData?.user?.name}
                         </p>
                        
                     </div>
                 </div>
-                <div className="h-screen w-[75%]">
+                <div className=" w-[75%] overflow-y-auto">
                     <Outlet/>
                 </div>
 

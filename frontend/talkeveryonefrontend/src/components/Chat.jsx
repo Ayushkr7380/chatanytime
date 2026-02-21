@@ -59,14 +59,14 @@ export default function Chat(){
     return (
         <>
             <div className="h-screen flex flex-col">
-                <div className="h-[10vh]  flex items-center">
+                <div className="h-[8vh]  flex items-center">
                     <div className="font-bold flex items-center px-2 mx-1">
                         <FaUserCircle className="text-3xl"/>
                         <p className="mx-3">{messages?.length > 0 ? messages[0]?.chat?.users?.find((u)=>u?._id !== userData?.user?._id)?.name : newChat?.users?.find((u)=>u?._id !== userData?.user?._id)?.name}</p>
                     </div>
                 </div>
-                <div className="flex-1 flex flex-col bg-gray-300 justify-between">
-                    <div className="flex-1 overflow-y-auto p-3">
+                <div className="flex-1 flex flex-col bg-gray-300 justify-between overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                         {messages && messages.map(( msg )=>(
                             <MessageBubble
                                 key={msg._id}
@@ -104,7 +104,7 @@ export default function Chat(){
                             <button
                                 type="submit"
                                 disabled={!messageValue || messageValue.trim() === ""}
-                                className="w-[5%] flex items-center justify-center text-xl bg-black text-center text-white p-2 mt-1 rounded-r-lg cursor-pointer hover:bg-orange-600 transition"
+                                className="w-[5%] flex items-center justify-center text-xl bg-black text-center text-white p-2 mt-1 rounded-r-lg cursor-pointer hover:bg-gray-600 transition"
                                 >
                                 <IoSend/>
                             </button>
