@@ -1,110 +1,110 @@
-import { CreateUserContext } from "@/context/userContext/CreateUserContext";
-import { useContext, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
-import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
-    DialogClose,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
-import { Field, FieldGroup } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+    Item,
+    ItemContent,
+    ItemGroup,
+    ItemMedia,
+    ItemTitle,
+} from "@/components/ui/item";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
 import { FaPlus } from "react-icons/fa";
+import { useSearch } from "@/hooks/useSearch";
+import { useCreateChat } from "@/hooks/useCreateChat";
+
 export const SearchUser = () => {
 
-    const userContext = useContext(CreateUserContext);
-    const { search, searchUsers ,openDialogPrivateChat ,setOpenDialogPrivateChat,createNewChat} = userContext;
-    const {
-        register,
-        // handleSubmit,
-        watch,
-        formState: { errors },
-    } = useForm();
+    const [open, setOpen] = useState(false);
 
-    const searchValue = watch("search");
+    const [keyword, setKeyword] = useState("");
+    const [debouncedKeyword, setDebouncedKeyword] = useState("");
 
-    console.log("ssss", searchUsers);
+    const { mutate: createChat } = useCreateChat();
 
+    const handleCreateChat = (userId) => {
+        createChat(userId);
+        setOpen(false);
+    };
 
-    useEffect(() => {
+    const handleChange = (e) => {
+        setKeyword(e.target.value);
 
-        const timer = setTimeout(() => {
-            search(searchValue);
+        clearTimeout(window._searchTimer);
+
+        window._searchTimer = setTimeout(() => {
+            setDebouncedKeyword(e.target.value);
         }, 500);
+    };
 
-        return () => clearTimeout(timer);
-
-    }, [searchValue]);
-
-    // const handleChat = (id)=>{
-    //     console.log("id for the creation od chat ",id);
-    // }
+    const { data: users, isLoading } = useSearch(debouncedKeyword);
 
     return (
-        <>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger>
+                <Button variant="outline">
+                    <FaPlus />
+                </Button>
+            </DialogTrigger>
 
-            <Dialog open={openDialogPrivateChat} onOpenChange={setOpenDialogPrivateChat}>
+            <DialogContent className="sm:max-w-sm">
+                <FieldGroup>
+                    <Field>
+                        <Label className="m-2">
+                            Search and start a new chat
+                        </Label>
 
-                <DialogTrigger>
-                    <Button variant="outline"><FaPlus /></Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-sm">
-                    <FieldGroup>
-                        <Field>
-                            <Label htmlFor="name-1" className="m-2">Search and start a new chat</Label>
-                            <input
-                                id="name-1"
-                                name="name"
-                                className="bg-gray-200 cursor-pointer rounded-lg px-2 py-1 m-2 hover:border-gray-400"
-                                {...register("search", { required: "Enter name or username" })}
-                            />
-                        </Field>
+                        <input
+                            value={keyword}
+                            onChange={handleChange}
+                            className="bg-gray-200 cursor-pointer rounded-lg px-2 py-1 m-2 hover:border-gray-400"
+                            placeholder="Search by name or username"
+                        />
+                    </Field>
+                </FieldGroup>
 
-                    </FieldGroup>
-                    <div className="flex w-full max-w-md flex-col max-h-[250px] overflow-y-auto">
-                        <ItemGroup className="gap-0.5  mx-1">
-                            {searchUsers && searchUsers?.users.map((user) => (
-                                <Item key={user._id} variant="outline" role="listitem" className="py-1 px-2" onClick={()=>createNewChat(user._id)}>
-                                    
-                                        <ItemMedia variant="image">
-                                            <img
-                                                src={dummyprofilepic}
-                                                alt={""}
-                                                width={28}
-                                                height={28}
-                                                className="object-cover rounded-full grayscale"
-                                            />
-                                        </ItemMedia>
-                                        <ItemContent>
-                                            <ItemTitle className="line-clamp-1">
-                                                {user.name}
-                                            </ItemTitle>
+                {isLoading && (
+                    <p className="text-center text-sm">
+                        Searching...
+                    </p>
+                )}
 
-                                        </ItemContent>
-                                       
-                                    
-                                </Item>
-                            ))}
-                        </ItemGroup>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </>
-    )
-}
+                <div className="flex w-full max-w-md flex-col max-h-62.5 overflow-y-auto">
+                    <ItemGroup className="gap-0.5 mx-1">
+                        {users?.map((user) => (
+                            <Item
+                                key={user._id}
+                                variant="outline"
+                                role="listitem"
+                                className="py-1 px-2 cursor-pointer hover:bg-gray-300"
+                                onClick={() => handleCreateChat(user._id)}
+                            >
+                                <ItemMedia variant="image">
+                                    <img
+                                        src={dummyprofilepic}
+                                        alt=""
+                                        width={28}
+                                        height={28}
+                                        className="object-cover rounded-full grayscale"
+                                    />
+                                </ItemMedia>
+
+                                <ItemContent>
+                                    <ItemTitle className="line-clamp-1">
+                                        {user.name}
+                                    </ItemTitle>
+                                </ItemContent>
+                            </Item>
+                        ))}
+                    </ItemGroup>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};

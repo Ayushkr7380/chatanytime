@@ -17,7 +17,7 @@ import Login from "./Login"
 export default function ToggleAuth() {
   return (
     <div className="flex justify-center mt-10">
-        <Tabs defaultValue="Registration" className="w-[400px] ">
+        <Tabs defaultValue="Registration" className="w-100 ">
             <div className="flex justify-center">
                 <TabsList >
                     <TabsTrigger value="Registration">Registration</TabsTrigger>

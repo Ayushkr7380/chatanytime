@@ -1,120 +1,225 @@
 import { FaUserCircle } from "react-icons/fa";
-import { Input } from "./ui/input";
-import { useParams } from "react-router-dom";
-import { useContext, useEffect } from "react";
-import { CreateUserContext } from "@/context/userContext/CreateUserContext";
+import { useEffect } from "react";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { MessageBubble } from "./MessageBubble";
 import { useForm } from "react-hook-form";
-import { IoSend } from "react-icons/io5";
+import { IoArrowBack, IoSend } from "react-icons/io5";
 import socket from "@/websocket/Socket";
-export default function Chat(){
+import { useMessages } from "@/hooks/useMessages";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSendMessage } from "@/hooks/useSendMessage";
+import { useMe } from "@/hooks/useMe";
+import Skeleton from "@/components/Skeleton";
 
+export default function Chat() {
+    const navigate = useNavigate();
     const { chatId } = useParams();
-    const userContext = useContext(CreateUserContext);
-    const { fetchMessages ,messages,userData ,sendMessage ,newChat ,setMessages } = userContext;
 
-    
+    const location = useLocation();
+    const createdChat = location.state?.chat;
 
-    useEffect(()=>{
-        console.log("Opened Chat ID:", chatId);
-        fetchMessages(chatId);
-    },[chatId])
+    const { data: meData } = useMe();
 
+    const queryClient = useQueryClient();
 
-     //Listen message from backend
-    useEffect(()=>{
-       
-        socket.on("receiveMessage",(msgData)=>{
-            //Only add messages of current chat
-            if (msgData.chatId === chatId) {
-                setMessages((prev) => [...prev, msgData]);
-            }
-        })
+    const { data: messages = [], isLoading } = useMessages(chatId);
 
-        return ()=>{
-            socket.off("receiveMessage");
+    const { mutate: sendMessage } = useSendMessage();
+
+    useEffect(() => {
+        const joinRoom = () => {
+            socket.emit("joinChat", chatId);
+        };
+
+        if (socket.connected) {
+            joinRoom();
         }
-    },[chatId])
+
+        socket.on("connect", joinRoom);
+
+        const handleReceiveMessage = (msgData) => {
+            if (msgData.chatId === chatId) {
+                queryClient.setQueryData(["messages", chatId], (prev) => [
+                    ...(prev || []),
+                    msgData,
+                ]);
+            }
+        };
+
+        socket.on("receiveMessage", handleReceiveMessage);
+
+        return () => {
+            socket.off("connect", joinRoom);
+            socket.off("receiveMessage", handleReceiveMessage);
+        };
+    }, [chatId, queryClient]);
 
     const {
         register,
         handleSubmit,
         watch,
         reset,
-        formState: { errors },
-      } = useForm()
-    
-      const messageValue = watch("content");
+    } = useForm();
 
-      const onSubmit = ({content}) => {
-          sendMessage({content,chatId})
-          reset();
+    const messageValue = watch("content");
+
+    const onSubmit = ({ content }) => {
+        sendMessage({
+            content,
+            chatId,
+        });
+
+        reset();
+    };
+
+    if (isLoading) {
+        return (
+            <div className="p-6 space-y-4">
+                {[...Array(8)].map((_, i) => (
+                    <div
+                        key={i}
+                        className={`flex ${
+                            i % 2 === 0
+                                ? "justify-start"
+                                : "justify-end"
+                        }`}
+                    >
+                        <Skeleton className="h-12 w-52 rounded-2xl" />
+                    </div>
+                ))}
+            </div>
+        );
     }
 
-    console.log("M : ",messages);
-    console.log("U : ",userData);
-    console.log("N : ",newChat);
-    
-    
+    const otherUserName =
+        messages?.length > 0
+            ? messages[0]?.chat?.users?.find(
+                  (u) => u?._id !== meData?.user?._id
+              )?.name
+            : createdChat?.users?.find(
+                  (u) => u?._id !== meData?.user?._id
+              )?.name;
+
     return (
-        <>
-            <div className="h-screen flex flex-col">
-                <div className="h-[8vh]  flex items-center">
-                    <div className="font-bold flex items-center px-2 mx-1">
-                        <FaUserCircle className="text-3xl"/>
-                        <p className="mx-3">{messages?.length > 0 ? messages[0]?.chat?.users?.find((u)=>u?._id !== userData?.user?._id)?.name : newChat?.users?.find((u)=>u?._id !== userData?.user?._id)?.name}</p>
+        <div className="w-full h-screen flex flex-col bg-slate-50">
+
+            {/* Header */}
+            <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4">
+
+                <div className="flex items-center gap-3">
+
+                    <button
+                        onClick={() => navigate("/")}
+                        className="
+                            md:hidden
+                            p-1
+                            rounded-lg
+                            hover:bg-slate-100
+                        "
+                    >
+                        <IoArrowBack size={20} />
+                    </button>
+                    <FaUserCircle className="text-4xl text-violet-600" />
+
+                    <div>
+                        <h2 className="font-semibold text-slate-800">
+                            {otherUserName}
+                        </h2>
+
+                        <p className="text-xs text-green-500">
+                            Online
+                        </p>
                     </div>
                 </div>
-                <div className="flex-1 flex flex-col bg-gray-300 justify-between overflow-y-auto">
-                    <div className="flex-1 overflow-y-auto no-scrollbar p-3">
-                        {messages && messages.map(( msg )=>(
-                            <MessageBubble
-                                key={msg._id}
-                                text={msg.content}
-                                isSender={msg?.sender?._id === userData?.user?._id}
-                                time = {new Date(msg.createdAt).toLocaleTimeString([],{
-                                    hour:"numeric",
-                                    minute:"2-digit",
-                                    hour12:true,
-                                })}
-                            />
-                        ))}
-                    </div>
 
-                    <div className="bottom  p-1">
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex">
-
-        
-                            <div className="w-[95%]">
-
-            
-                                <input
-                                type="text" 
-                                placeholder="Enter a message"
-                                {...register("content" , {required:"message is required"})}
-                                className="w-full border rounded-l-lg  p-2 mt-1 bg-gray-400 cursor-pointer "
-                                />
-
-                                {errors.content && (
-                                    <p className="text-red-500 text-sm">{errors.content.message}</p>
-                                )}
-                            </div>
-
-     
-                            <button
-                                type="submit"
-                                disabled={!messageValue || messageValue.trim() === ""}
-                                className="w-[5%] flex items-center justify-center text-xl bg-black text-center text-white p-2 mt-1 rounded-r-lg cursor-pointer hover:bg-gray-600 transition"
-                                >
-                                <IoSend/>
-                            </button>
-
-      
-                        </form>
-                        
-                    </div>
-                </div>
             </div>
-        </>
-    )
+
+            {/* Messages */}
+            <div
+                className="
+                    flex-1
+                    overflow-y-auto
+                    no-scrollbar
+                    p-4
+                    bg-slate-50
+                "
+            >
+                {messages?.map((msg) => (
+                    <MessageBubble
+                        key={msg._id}
+                        text={msg.content}
+                        isSender={
+                            msg?.sender?._id === meData?.user?._id
+                        }
+                        time={new Date(
+                            msg.createdAt
+                        ).toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                        })}
+                    />
+                ))}
+            </div>
+
+            {/* Input */}
+            <div className="p-3 bg-white border-t border-slate-200">
+
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="flex items-center gap-2"
+                >
+
+                    <input
+                        type="text"
+                        placeholder="Type a message..."
+                        {...register("content", {
+                            required: "message is required",
+                        })}
+                        className="
+                            flex-1
+                            border
+                            border-slate-200
+                            rounded-xl
+                            px-4
+                            py-3
+                            outline-none
+                            focus:border-violet-500
+                            bg-slate-50
+                        "
+                    />
+
+                    <button
+                        type="submit"
+                        disabled={
+                            !messageValue ||
+                            messageValue.trim() === ""
+                        }
+                        className="
+                            h-12
+                            w-12
+                            flex
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-violet-600
+                            text-white
+                            hover:bg-violet-700
+                            transition
+                            disabled:opacity-50
+                        "
+                    >
+                        <IoSend />
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+    );
 }

@@ -1,24 +1,61 @@
-export const MessageBubble = ({ text, isSender, time }) => {
-  return (
-    <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
-      
-      <div
-        className={`max-w-[60%] px-3 py-2 rounded-2xl text-sm flex flex-col gap-1
-        ${
-          isSender
-            ? "bg-black text-white rounded-br-none"
-            : "bg-gray-200 text-black rounded-bl-none"
-        }`}
-      >
-        {/* Message Text */}
-        <p className="wrap-break-word">{text}</p>
+export const MessageBubble = ({
+    text,
+    isSender,
+    time,
+}) => {
+    return (
+        <div
+            className={`flex ${
+                isSender
+                    ? "justify-end"
+                    : "justify-start"
+            } mb-3`}
+        >
+            <div
+                className={`
+                    max-w-[80%]
+                    sm:max-w-[70%]
+                    px-4
+                    py-3
+                    rounded-2xl
+                    shadow-sm
+                    break-words
+                    ${
+                        isSender
+                            ? `
+                                bg-violet-600
+                                text-white
+                                rounded-br-md
+                              `
+                            : `
+                                bg-white
+                                text-slate-800
+                                border
+                                border-slate-200
+                                rounded-bl-md
+                              `
+                    }
+                `}
+            >
+                <p className="text-sm leading-relaxed">
+                    {text}
+                </p>
 
-        {/* Time */}
-        <p className="text-[10px] opacity-60 text-right">
-          {time}
-        </p>
-      </div>
-
-    </div>
-  );
+                <p
+                    className={`
+                        text-[10px]
+                        mt-1
+                        text-right
+                        ${
+                            isSender
+                                ? "text-violet-200"
+                                : "text-slate-400"
+                        }
+                    `}
+                >
+                    {time}
+                </p>
+            </div>
+        </div>
+    );
 };
