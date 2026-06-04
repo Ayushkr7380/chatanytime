@@ -8,6 +8,9 @@ import UserProtectedRoute from "../components/UserProtectedRoute";
 import AuthProtectedRoute from "../components/AuthProtectedRoute";
 import EmptyChat from "@/components/EmptyChat";
 import NotFoundRedirect from "@/components/NotFoundRedirect";
+import GroupChat from "@/components/GroupChat"
+import GroupInfo from "@/components/GroupInfo";
+import UserInfo from "@/components/UserInfo";
 
 function CustomRoutes() {
     return (
@@ -38,6 +41,17 @@ function CustomRoutes() {
                         path="chat/:chatId"
                         element={<Chat />}
                     />
+
+                    <Route path="group/:chatId" element={<GroupChat/>}/>
+                    <Route
+                            path="group/:chatId/info"
+                            element={<GroupInfo />}
+                        />
+
+                        <Route
+                            path="chat/:chatId/info"
+                            element={<UserInfo />}
+                        />
 
                 </Route>
 

@@ -5,5 +5,6 @@ export const useMessages = (chatId) => {
   return useQuery({
     queryKey: ["messages", chatId],
     queryFn: () => getMessages(chatId),
+    
   });
 };

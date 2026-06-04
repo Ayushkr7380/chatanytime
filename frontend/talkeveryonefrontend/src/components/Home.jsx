@@ -87,7 +87,8 @@ function Home() {
 
 
     const isChatPage =
-    location.pathname.startsWith("/chat/");
+    location.pathname.startsWith("/chat/") ||
+    location.pathname.startsWith("/group/");
 
     return (
         <div className="flex h-screen bg-slate-50">

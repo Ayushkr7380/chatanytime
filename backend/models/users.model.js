@@ -35,7 +35,19 @@ const users = new Schema({
         type:Boolean,
         required:true,
         default:false,
-    }
+    },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    lastSeen: {
+        type: Date,
+        default: null
+    },
+    blockedUsers: [{
+    type: Schema.Types.ObjectId,
+    ref: "User"
+}]
 },{
     timestamps:true
 });

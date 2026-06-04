@@ -8,6 +8,8 @@ import {Server } from "socket.io";
 import cors from "cors";
 import userRouter from "./routes/userRoutes.js";
 import chatRouter from "./routes/chatRoutes.js";
+import { Chat } from "./models/chat.model.js";
+import { User } from "./models/users.model.js";
 
 const app = express();
 const server = createServer(app);
@@ -56,37 +58,92 @@ const io = new Server(server,{
 
 
 
-io.on("connection",(socket)=>{
-    console.log("A new user connected with socket id : ",socket.handshake.auth?.name);
+io.on("connection", async(socket) => {
+    const userId = socket.handshake.auth?.userId;
 
-    //join chat room
-    socket.on("joinChat",(chatId)=>{
+    console.log("A new user connected:", socket.handshake.auth?.name);
+
+    // Personal room join karo
+    if (userId) {
+        socket.join(userId);
+        console.log("User personal room joined:", userId);
+
+        await User.findByIdAndUpdate(userId, {
+            isOnline: true,
+            lastSeen: null
+        });
+
+        io.emit("userStatusUpdate", {
+            userId,
+            isOnline: true,
+            lastSeen: null
+        });
+    }
+
+    // Chat room join karo
+    socket.on("joinChat", (chatId) => {
         socket.join(chatId);
-        console.log("Room joined.")
-    })
+        console.log("Room joined:", chatId);
+    });
 
-    //Listen message from frontend
-    socket.on("sendMessage",(msgInfo)=>{
+    // Message aaya
+    socket.on("sendMessage", async (msgInfo) => {
         console.log("Message received from frontend:", msgInfo);
 
-        // //send to all users
-        // io.emit("receiveMessage",data);
+        // Chat ke users fetch karo
+        const chat = await Chat.findById(msgInfo.chatId).select("users");
 
-        console.log("socketroomid : ",msgInfo.chatId);
-        //send only to particular room
+        // Har user ko personally notify karo
+        chat.users.forEach((user) => {
+            io.to(user._id.toString()).emit("newMessageNotification", {
+                chatId: msgInfo.chatId,
+            });
+        });
+
+        // Room mein message bhejo
         io.to(msgInfo.chatId).emit("receiveMessage", {
-            _id: Date.now(), // temporary id
+            _id: Date.now(),
             content: msgInfo.content,
             chatId: msgInfo.chatId,
             sender: {
-            _id: socket.handshake.auth.userId,
+                _id: userId,
             },
             createdAt: new Date(),
         });
-    })
-})
+
+        
+    });
+
+    socket.on("disconnect", async () => {
+            if (userId) {
+                await User.findByIdAndUpdate(userId, {
+                    isOnline: false,
+                    lastSeen: new Date()
+                });
+                console.log("User disconnected:", userId);
+            }
+
+             io.emit("userStatusUpdate", {
+                userId,
+                isOnline: false,
+                lastSeen: new Date()
+            });
+
+            console.log("User disconnected:", userId);
+    });
+
+
+    socket.on("typing", ({ chatId }) => {
+        socket.to(chatId).emit("typing", { chatId, userId });
+    });
+
+    socket.on("stopTyping", ({ chatId }) => {
+        socket.to(chatId).emit("stopTyping", { chatId });
+    });
+});
 
 app.use("/auth",userRouter);
 app.use("/user",chatRouter);
 
+export { io };
 export default server;

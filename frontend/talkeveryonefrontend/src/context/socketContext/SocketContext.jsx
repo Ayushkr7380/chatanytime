@@ -1,62 +1,51 @@
-// import { useEffect } from "react";
 import { CreateSocketContext } from "./createSocketContext";
 import socket from "../../websocket/Socket";
+import { useQueryClient } from "@tanstack/react-query";
 
+function SocketContext(props) {
 
+    const queryClient = useQueryClient();
 
-function SocketContext(props){
-
-    
-    
-    // useEffect(()=>{
-    //     socket.connect(); //connect once
-
-    //     // socket.on("newUser",(newuserid)=>{
-    //     //     console.log("New user connected with id : ",newuserid);
-    //     // });
-
-
-    //     return ()=>{
-    //         socket.disconnect();
-    //     }
-    // },[])
-
-    function connectSocket(data){
-        if(!socket.connected){
-            console.log("Check ",data);
-            
-            socket.auth=data;
+    function connectSocket(data) {
+        if (!socket.connected) {
+            socket.auth = data;
             socket.connect();
+
+            // ← Global listener — connect hote hi lagao
+            socket.on("newMessageNotification", ({ chatId }) => {
+                console.log("New message notification:", chatId);
+                queryClient.invalidateQueries({ queryKey: ["chats"] });
+            });
         }
     }
 
-    function joinAllChats(chatList){
-        if(!socket.connected){
+    function joinAllChats(chatList) {
+        if (!socket.connected) {
             console.log("socket not connected.");
             return;
         }
-
         chatList.forEach((chat) => {
-        socket.emit("joinChat", chat._id);
+            socket.emit("joinChat", chat._id);
         });
     }
 
-    function sendMessageSocket(msgData){
-        console.log("Message which is going to backend : ",msgData);
-
-        socket.emit("sendMessage",msgData);
+    function sendMessageSocket(msgData) {
+        socket.emit("sendMessage", msgData);
     }
 
-   
+    function startTyping(chatId) {
+        socket.emit("typing", { chatId });
+    }
 
-    return(
-        <>
-            <CreateSocketContext.Provider value={{connectSocket,sendMessageSocket,joinAllChats}}>
-                {props.children}
-            </CreateSocketContext.Provider>
+    function stopTyping(chatId) {
+        socket.emit("stopTyping", { chatId });
+    }
 
-        </>
-    )
+    return (
+        <CreateSocketContext.Provider value={{ connectSocket, sendMessageSocket, joinAllChats ,startTyping ,stopTyping}}>
+            {props.children}
+        </CreateSocketContext.Provider>
+    );
 }
 
 export default SocketContext;

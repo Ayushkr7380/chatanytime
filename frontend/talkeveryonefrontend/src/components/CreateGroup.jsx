@@ -2,145 +2,157 @@
 
 import { useState } from "react"
 import { MdOutlineGroupAdd } from "react-icons/md"
-
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
-
 import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
+    Item,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
 } from "@/components/ui/item"
-
-import { InboxIcon } from "lucide-react"
+import { useSearch } from "@/hooks/useSearch"
+import { useCreateGroup } from "@/hooks/useCreateGroup"
+import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png"
+import { toast } from "sonner"
 
 export default function CreateGroup() {
 
-  // ✅ Dummy users list (Backend se aayega)
-  const users = [
-    { _id: "101", name: "Ayush", username: "ayush7380" },
-    { _id: "102", name: "Rahul", username: "rahul123" },
-    { _id: "103", name: "Anshika", username: "anshi99" },
-  ]
+    const [groupName, setGroupName] = useState("");
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [keyword, setKeyword] = useState("");
+    const [debouncedKeyword, setDebouncedKeyword] = useState("");
+    const [open, setOpen] = useState(false);
 
-  // ✅ Group name state
-  const [groupName, setGroupName] = useState("")
+    const { data: users, isLoading } = useSearch(debouncedKeyword);
 
-  // ✅ Selected user IDs state
-  const [selectedUsers, setSelectedUsers] = useState([])
+    const { mutate: createGroup, isPending } = useCreateGroup(() => {
+        setOpen(false);
+        setGroupName("");
+        setSelectedUsers([]);
+        setKeyword("");
+        setDebouncedKeyword("");
+    });
 
-  // ✅ Checkbox toggle function
-  const handleSelectUser = (userId) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId) // remove
-        : [...prev, userId] // add
-    )
-  }
+    const handleChange = (e) => {
+        setKeyword(e.target.value);
+        clearTimeout(window._groupSearchTimer);
+        window._groupSearchTimer = setTimeout(() => {
+            setDebouncedKeyword(e.target.value);
+        }, 500);
+    };
 
-  // ✅ Submit handler
-  const handleCreateGroup = (e) => {
-    e.preventDefault()
+    const handleSelectUser = (userId) => {
+        setSelectedUsers((prev) =>
+            prev.includes(userId)
+                ? prev.filter((id) => id !== userId)
+                : [...prev, userId]
+        );
+    };
 
-    const groupData = {
-      name: groupName,
-      members: selectedUsers,
-    }
+    const handleCreateGroup = (e) => {
+        e.preventDefault();
+        if (!groupName.trim()) return toast.error("Group name is required.");
+        if (selectedUsers.length < 2) return toast.error("Select at least 2 members.");
+        createGroup({ groupName, groupMembers: selectedUsers });
+    };
 
-    console.log("Group Created Data:", groupData)
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                    <MdOutlineGroupAdd />
+                    Group
+                </Button>
+            </DialogTrigger>
 
-    // ✅ Backend API call example:
-    /*
-    axios.post("/api/group/create", groupData)
-    */
+            <DialogContent className="sm:max-w-sm">
+                <form onSubmit={handleCreateGroup}>
+                    <DialogHeader>
+                        <DialogTitle>Create Group</DialogTitle>
+                    </DialogHeader>
 
-    alert("Group Created Successfully!")
-  }
+                    {/* Group Name */}
+                    <div className="mt-4 mx-1">
+                        <Input
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            placeholder="Enter group name..."
+                        />
+                    </div>
 
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <MdOutlineGroupAdd />
-          Group
-        </Button>
-      </DialogTrigger>
+                    {/* Search Users */}
+                    <div className="mx-1 my-2">
+                        <Input
+                            value={keyword}
+                            onChange={handleChange}
+                            placeholder="Search users..."
+                            className="bg-gray-100"
+                        />
+                    </div>
 
-      <DialogContent className="sm:max-w-sm">
-        
-        <form onSubmit={handleCreateGroup}>
-          <DialogHeader>
-            <DialogTitle>Add Group Members</DialogTitle>
-          </DialogHeader>
+                    {isLoading && (
+                        <p className="text-center text-sm text-slate-400">Searching...</p>
+                    )}
 
-          <div className="mx-1 my-2">
-                <Input placeholder="Search or Start a new chat" className="bg-gray-200 cursor-pointer rounded-lg hover:border-2 border-gray-400"/>
-            </div>
+                    {/* Selected count */}
+                    {selectedUsers.length > 0 && (
+                        <p className="text-xs text-violet-600 mx-1 mb-1">
+                            {selectedUsers.length} member(s) selected
+                        </p>
+                    )}
 
-          {/* ✅ Group Name Input */}
-          <div className="space-y-2 mt-4 mx-1">
-            {/* <Label>Group Name</Label> */}
-            <Input
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Enter group name..."
-            />
-          </div>
+                    {/* Users List */}
+                    <div className="mt-2 space-y-2 max-h-[200px] overflow-y-auto mx-1">
+                        {users && users.map((user) => (
+                            <div
+                                key={user._id}
+                                className="flex items-center gap-3 cursor-pointer"
+                               
+                            >
+                                <Checkbox
+                                    checked={selectedUsers.includes(user._id)}
+                                    onCheckedChange={() => handleSelectUser(user._id)}
+                                />
+                                <Item variant="outline" size="xs" className="w-full">
+                                    <ItemMedia variant="image">
+                                        <img
+                                            src={dummyprofilepic}
+                                            alt={user.name}
+                                            width={28}
+                                            height={28}
+                                            className="object-cover rounded-full grayscale"
+                                        />
+                                    </ItemMedia>
+                                    <ItemContent>
+                                        <ItemTitle>{user.name}</ItemTitle>
+                                        <ItemDescription>{user.username}</ItemDescription>
+                                    </ItemContent>
+                                </Item>
+                            </div>
+                        ))}
+                    </div>
 
-          {/* ✅ Members List */}
-          <div className="mt-5 space-y-3">
-            {users.map((user) => (
-              <div
-                key={user._id}
-                className="flex items-center gap-3"
-              >
-                {/* Checkbox */}
-                <Checkbox
-                  checked={selectedUsers.includes(user._id)}
-                  onCheckedChange={() => handleSelectUser(user._id)}
-                />
-
-                {/* User Card */}
-                <Item variant="outline" size="xs" className="w-full">
-                  <ItemMedia variant="icon">
-                    <InboxIcon />
-                  </ItemMedia>
-
-                  <ItemContent>
-                    <ItemTitle>{user.name}</ItemTitle>
-                    <ItemDescription>{user.username}</ItemDescription>
-                  </ItemContent>
-                </Item>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer */}
-          <DialogFooter className="mt-6">
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-
-            <Button type="submit">
-              Create Group
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
+                    <DialogFooter className="mt-6">
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={isPending}>
+                            {isPending ? "Creating..." : "Create Group"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }

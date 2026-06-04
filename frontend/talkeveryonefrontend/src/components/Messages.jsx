@@ -7,14 +7,15 @@ import {
     ItemMedia,
     ItemTitle,
 } from "@/components/ui/item";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useChats } from "@/hooks/useChats";
 import { useMe } from "@/hooks/useMe";
 import Skeleton from "@/components/Skeleton";
+import { FaUsers } from "react-icons/fa";
 
 export default function Messages() {
 
-    const { chatId } = useParams();
+    const location = useLocation();
 
     const { data: meData } = useMe();
 
@@ -66,6 +67,38 @@ export default function Messages() {
         );
     }
 
+    const formatChatTime = (dateStr) => {
+
+        const date = new Date(dateStr);
+        const now = new Date();
+
+        const isToday =
+            date.toDateString() === now.toDateString();
+
+        const yesterday = new Date();
+        yesterday.setDate(now.getDate() - 1);
+
+        const isYesterday =
+            date.toDateString() === yesterday.toDateString();
+
+        if (isToday) {
+            return date.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+            });
+        }
+
+        if (isYesterday) {
+            return "Yesterday";
+        }
+
+        return date.toLocaleDateString([], {
+            day: "numeric",
+            month: "short",
+        });
+    };
+
     return (
         <div className="p-2">
 
@@ -77,7 +110,12 @@ export default function Messages() {
                         (u) => u._id !== meData?.user?._id
                     );
 
-                    const isActive = chatId === chat._id;
+                    const chatPath = chat.isGroupChat
+                        ? `/group/${chat._id}`
+                        : `/chat/${chat._id}`;
+
+                    const isActive =
+                        location.pathname === chatPath;
 
                     return (
                         <Item
@@ -99,73 +137,95 @@ export default function Messages() {
                                 }
                             `}
                         >
-                            <Link
-                                to={`/chat/${chat._id}`}
-                                className="flex items-center gap-3"
-                            >
+                            <Link to={chatPath}>
 
                                 <ItemMedia variant="image">
-                                    <img
-                                        src={dummyprofilepic}
-                                        alt={otherUser?.name}
-                                        width={48}
-                                        height={48}
-                                        className="
-                                            h-12
-                                            w-12
-                                            rounded-full
-                                            object-cover
-                                            border-2
-                                            border-violet-200
-                                        "
-                                    />
+
+                                    {chat.isGroupChat ? (
+                                        <div
+                                            className="
+                                                h-12
+                                                w-12
+                                                rounded-full
+                                                bg-violet-100
+                                                border-2
+                                                border-violet-200
+                                                flex
+                                                items-center
+                                                justify-center
+                                            "
+                                        >
+                                            <FaUsers
+                                                className="
+                                                    text-violet-600
+                                                    text-lg
+                                                "
+                                            />
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={dummyprofilepic}
+                                            alt={otherUser?.name}
+                                            width={48}
+                                            height={48}
+                                            className="
+                                                h-12
+                                                w-12
+                                                rounded-full
+                                                object-cover
+                                                border-2
+                                                border-violet-200
+                                            "
+                                        />
+                                    )}
+
                                 </ItemMedia>
 
                                 <ItemContent className="flex-1 min-w-0">
 
                                     <div className="flex items-center justify-between">
 
-                                        <ItemTitle
-                                            className="
-                                                text-slate-800
-                                                font-semibold
-                                                truncate
-                                            "
-                                        >
-                                            {otherUser?.name}
+                                        <ItemTitle className="text-slate-800 font-semibold truncate">
+
+                                            {chat.isGroupChat
+                                                ? chat.chatName
+                                                : otherUser?.name}
+
                                         </ItemTitle>
 
-                                        <ItemDescription
-                                            className="
-                                                text-xs
-                                                text-slate-400
-                                                ml-2
-                                                shrink-0
-                                            "
-                                        >
-                                            {new Date(
-                                                chat.updatedAt
-                                            ).toLocaleTimeString([], {
-                                                hour12: true,
-                                                hour: "numeric",
-                                                minute: "2-digit",
-                                            })}
-                                        </ItemDescription>
+                                        <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+
+                                            <ItemDescription className="text-xs text-slate-400">
+                                                {formatChatTime(chat.updatedAt)}
+                                            </ItemDescription>
+
+                                            {chat.unreadCount > 0 && (
+                                                <span
+                                                    className="
+                                                        bg-violet-600
+                                                        text-white
+                                                        text-xs
+                                                        rounded-full
+                                                        px-2
+                                                        py-0.5
+                                                        leading-none
+                                                    "
+                                                >
+                                                    {chat.unreadCount}
+                                                </span>
+                                            )}
+
+                                        </div>
 
                                     </div>
 
-                                    <ItemDescription
-                                        className="
-                                            text-sm
-                                            text-slate-500
-                                            truncate
-                                            mt-1
-                                        "
-                                    >
-                                        {
-                                            chat.latestMessage?.content ||
-                                            "Start chatting..."
-                                        }
+                                    <ItemDescription className="text-sm text-slate-500 truncate mt-1">
+
+                                        {chat.latestMessage?.content ||
+                                            (chat.isGroupChat
+                                                ? "Group created"
+                                                : "Start chatting...")}
+
                                     </ItemDescription>
 
                                 </ItemContent>

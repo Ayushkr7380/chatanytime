@@ -198,3 +198,162 @@ export const getUserData = async(req,res)=>{
         })
     }
 }
+
+export const getUserStatus = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId).select("isOnline lastSeen name");
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            isOnline: user.isOnline,
+            lastSeen: user.lastSeen,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const blockUser = async (req, res) => {
+    try {
+
+        const currentUserId = req.user.id;
+        const { userId } = req.params;
+
+        if (currentUserId === userId) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot block yourself."
+            });
+        }
+
+        const currentUser = await User.findById(currentUserId);
+
+        const alreadyBlocked =
+            currentUser.blockedUsers.some(
+                (id) => id.toString() === userId
+            );
+
+        if (alreadyBlocked) {
+            return res.status(400).json({
+                success: false,
+                message: "User already blocked."
+            });
+        }
+
+        await User.findByIdAndUpdate(
+            currentUserId,
+            {
+                $addToSet: {
+                    blockedUsers: userId
+                }
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "User blocked successfully."
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+
+export const unblockUser = async (req, res) => {
+    try {
+
+        const currentUserId = req.user.id;
+        const { userId } = req.params;
+
+        await User.findByIdAndUpdate(
+            currentUserId,
+            {
+                $pull: {
+                    blockedUsers: userId
+                }
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "User unblocked successfully."
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+
+export const getBlockStatus = async (req, res) => {
+    try {
+
+        const currentUserId = req.user.id;
+        const { userId } = req.params;
+
+        const currentUser = await User.findById(
+            currentUserId
+        );
+
+        const otherUser = await User.findById(
+            userId
+        );
+
+        if (!otherUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        const isBlockedByMe =
+            currentUser.blockedUsers.some(
+                (id) =>
+                    id.toString() ===
+                    userId.toString()
+            );
+
+        const blockedMe =
+            otherUser.blockedUsers.some(
+                (id) =>
+                    id.toString() ===
+                    currentUserId.toString()
+            );
+
+        return res.status(200).json({
+            success: true,
+            isBlockedByMe,
+            blockedMe,
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+};
