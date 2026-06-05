@@ -12,10 +12,18 @@ export default function UserInfo() {
 
     const navigate = useNavigate();
     const { chatId } = useParams();
-
     const { data: chats } = useChats();
+     const chat = chats.find(
+        (chat) => chat._id === chatId
+    );
+
     const { data: meData } = useMe();
+    const otherUser = chat.users.find(
+        (user) =>
+            user._id !== meData?.user?._id
+    );
      const { data: blockStatus } =useBlockStatus(otherUser?._id);
+    
 
     const { mutate: blockUser,isPending: blockingUser} = useBlockUser();
 
@@ -30,9 +38,7 @@ export default function UserInfo() {
         );
     }
 
-    const chat = chats.find(
-        (chat) => chat._id === chatId
-    );
+   
 
     if (!chat) {
         return (
@@ -42,10 +48,7 @@ export default function UserInfo() {
         );
     }
 
-    const otherUser = chat.users.find(
-        (user) =>
-            user._id !== meData?.user?._id
-    );
+    
 
    
     const handleBlockUser = () => {
