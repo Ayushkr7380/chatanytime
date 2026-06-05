@@ -8,6 +8,7 @@ import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext
 import Skeleton from "@/components/Skeleton";
 import { useLocation } from "react-router-dom";
 import ProfileSheet from "./ProfileSheet";
+import socket from "../../websocket/Socket";
 
 function Home() {
     const location = useLocation();
@@ -15,13 +16,13 @@ function Home() {
     const { data, isLoading } = useMe();
 
     useEffect(() => {
-        if (data?.user) {
-            connectSocket({
-                userId: data.user._id,
-                name: data.user.name,
-            });
-        }
-    }, [data]);
+    if (data?.user && !socket.connected) {
+        connectSocket({
+            userId: data.user._id,
+            name: data.user.name,
+        });
+    }
+}, [data]);
 
     if (isLoading) {
         return (

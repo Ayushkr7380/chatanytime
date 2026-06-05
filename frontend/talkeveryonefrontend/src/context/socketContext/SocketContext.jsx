@@ -139,9 +139,7 @@ function SocketContext(props) {
                 }
             );
 
-        }
-
-        // Member Added
+            // Member Added
         socket.on(
             "memberAdded",
             ({ chatId }) => {
@@ -182,6 +180,10 @@ function SocketContext(props) {
 
             }
         );
+
+        }
+
+        
 
     }
 
