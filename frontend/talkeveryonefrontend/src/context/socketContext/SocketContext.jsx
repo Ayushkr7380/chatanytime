@@ -1,4 +1,4 @@
-import { CreateSocketContext } from "./createSocketContext";
+import { CreateSocketContext } from "./CreateSocketContext";
 import socket from "../../websocket/Socket";
 import { useQueryClient } from "@tanstack/react-query";
 
