@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const URI = process.env.MONGOURI;
+const URI = process.env.MONGO_URI;
 
 const DbConfig = async()=>{
     try {
