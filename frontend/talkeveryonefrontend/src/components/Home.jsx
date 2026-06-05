@@ -8,7 +8,7 @@ import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext
 import Skeleton from "@/components/Skeleton";
 import { useLocation } from "react-router-dom";
 import ProfileSheet from "./ProfileSheet";
-import socket from "../../websocket/Socket";
+import socket from "../websocket/Socket";
 
 function Home() {
     const location = useLocation();
