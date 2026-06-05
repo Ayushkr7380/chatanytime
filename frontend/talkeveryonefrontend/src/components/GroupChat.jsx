@@ -32,7 +32,6 @@ export default function GroupChat() {
     const [typerName, setTyperName] = useState("");
     const typingTimeoutRef = useRef(null);
 
-    // Group info
     const groupName = messages?.[0]?.chat?.chatName;
     const membersCount = messages?.[0]?.chat?.users?.length;
 
@@ -65,65 +64,21 @@ export default function GroupChat() {
 
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
-        socket.on(
-            "typing",
-            ({
-                chatId: typingChatId,
-                userId: typingUserId,
-                name
-            }) => {
-
-                if (typingChatId !== chatId)
-                    return;
-
-                if (
-                    typingUserId ===
-                    meData?.user?._id
-                )
-                    return;
-
-                setOtherTyping(true);
-
-                setTyperName(
-                    name || "Someone"
-                );
-            }
-        );
-        socket.on(
-            "stopTyping",
-            ({
-                chatId: typingChatId
-            }) => {
-
-                if (
-                    typingChatId !== chatId
-                )
-                    return;
-
-                setOtherTyping(false);
-
-                setTyperName("");
-            }
-        );
-
-        socket.on(
-            "removedFromGroup",
-            ({ chatId: removedChatId }) => {
-
-                if (
-                    removedChatId === chatId
-                ) {
-
-                    navigate("/");
-
-                }
-
-                queryClient.invalidateQueries({
-                    queryKey: ["chats"]
-                });
-
-            }
-        );
+        socket.on("typing", ({ chatId: typingChatId, userId: typingUserId, name }) => {
+            if (typingChatId !== chatId) return;
+            if (typingUserId === meData?.user?._id) return;
+            setOtherTyping(true);
+            setTyperName(name || "Someone");
+        });
+        socket.on("stopTyping", ({ chatId: typingChatId }) => {
+            if (typingChatId !== chatId) return;
+            setOtherTyping(false);
+            setTyperName("");
+        });
+        socket.on("removedFromGroup", ({ chatId: removedChatId }) => {
+            if (removedChatId === chatId) navigate("/");
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
+        });
 
         return () => {
             socket.off("connect", joinRoom);
@@ -133,8 +88,7 @@ export default function GroupChat() {
             socket.off("stopTyping");
             socket.off("removedFromGroup");
         };
-    }, [chatId, queryClient, meData?.user?._id,
-    navigate , markRead]);
+    }, [chatId, queryClient, meData?.user?._id, navigate, markRead]);
 
     const { register, handleSubmit, watch, reset } = useForm();
     const messageValue = watch("content");
@@ -154,48 +108,47 @@ export default function GroupChat() {
 
     if (isLoading) {
         return (
-            <div className="p-6 space-y-4 w-full h-screen">
-                {[...Array(8)].map((_, i) => (
-                    <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
-                        <Skeleton className="h-12 w-52 rounded-2xl" />
+            <div className="w-full h-[100dvh] flex flex-col bg-slate-50">
+                <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div>
+                        <Skeleton className="h-4 w-32 mb-1" />
+                        <Skeleton className="h-3 w-20" />
                     </div>
-                ))}
+                </div>
+                <div className="flex-1 p-4 space-y-4" style={{ overflowY: "auto" }}>
+                    {[...Array(8)].map((_, i) => (
+                        <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
+                            <Skeleton className="h-12 w-52 rounded-2xl" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full h-screen flex flex-col bg-slate-50">
+        <div className="w-full h-[100dvh] flex flex-col bg-slate-50">
 
             {/* Header */}
-            <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4">
-                <div className="flex items-center gap-3">
+            <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
+                <div className="flex items-center gap-1">
                     <button
                         onClick={() => navigate("/")}
-                        className="md:hidden p-1 rounded-lg hover:bg-slate-100"
+                        className="md:hidden p-2 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors shrink-0"
                     >
-                        <IoArrowBack size={20} />
+                        <IoArrowBack size={20} className="text-slate-700" />
                     </button>
-                    {/* CLICKABLE HEADER */}
-                    <div
-                        onClick={() =>
-                            navigate(`/group/${chatId}/info`)
-                        }
-                        className="
-                            flex
-                            items-center
-                            gap-3
-                            cursor-pointer
-                            flex-1
-                        "
-                    >
-                        <FaUsers className="text-4xl text-violet-600" />
 
-                        <div>
-                            <h2 className="font-semibold text-slate-800">
+                    <div
+                        onClick={() => navigate(`/group/${chatId}/info`)}
+                        className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0"
+                    >
+                        <FaUsers className="text-4xl text-violet-600 shrink-0" />
+                        <div className="min-w-0">
+                            <h2 className="font-semibold text-slate-800 text-sm truncate">
                                 {groupName}
                             </h2>
-
                             <p className="text-xs text-slate-500">
                                 {membersCount} members
                             </p>
@@ -205,20 +158,14 @@ export default function GroupChat() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto no-scrollbar p-4 bg-slate-50">
+            <div className="flex-1 p-4 bg-slate-50 no-scrollbar" style={{ overflowY: "auto" }}>
                 {messages?.map((msg) => (
                     <MessageBubble
                         key={msg._id}
                         text={msg.content}
                         messageType={msg.messageType}
-                        isSender={
-                            msg?.sender?._id === meData?.user?._id
-                        }
-                        senderName={
-                            msg?.sender?._id !== meData?.user?._id
-                                ? msg?.sender?.name
-                                : null
-                        }
+                        isSender={msg?.sender?._id === meData?.user?._id}
+                        senderName={msg?.sender?._id !== meData?.user?._id ? msg?.sender?.name : null}
                         time={new Date(msg.createdAt).toLocaleTimeString([], {
                             hour: "numeric",
                             minute: "2-digit",
@@ -226,16 +173,12 @@ export default function GroupChat() {
                         })}
                     />
                 ))}
-                {otherTyping && (
-                    <TypingBubble
-                        name={typerName}
-                    />
-                )}
+                {otherTyping && <TypingBubble name={typerName} />}
                 <div ref={bottomRef} />
             </div>
 
             {/* Input */}
-            <div className="p-3 bg-white border-t border-slate-200">
+            <div className="p-3 bg-white border-t border-slate-200 shrink-0">
                 <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
                     <input
                         type="text"
@@ -245,14 +188,14 @@ export default function GroupChat() {
                             register("content").onChange(e);
                             handleTyping();
                         }}
-                        className="flex-1 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 bg-slate-50"
+                        className="flex-1 min-w-0 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
                     />
                     <button
                         type="submit"
                         disabled={!messageValue || messageValue.trim() === ""}
-                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition disabled:opacity-50"
+                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 transition-colors disabled:opacity-40 shrink-0"
                     >
-                        <IoSend />
+                        <IoSend size={18} />
                     </button>
                 </form>
             </div>
