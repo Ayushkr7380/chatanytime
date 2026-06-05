@@ -207,14 +207,14 @@ function SocketContext(props) {
 
     }
 
-    function sendMessageSocket(msgData) {
+    // function sendMessageSocket(msgData) {
 
-        socket.emit(
-            "sendMessage",
-            msgData
-        );
+    //     socket.emit(
+    //         "sendMessage",
+    //         msgData
+    //     );
 
-    }
+    // }
 
     function startTyping(chatId) {
 
@@ -238,7 +238,7 @@ function SocketContext(props) {
         <CreateSocketContext.Provider
             value={{
                 connectSocket,
-                sendMessageSocket,
+                // sendMessageSocket,
                 joinAllChats,
                 startTyping,
                 stopTyping,

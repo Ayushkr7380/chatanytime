@@ -200,7 +200,7 @@ export const sendMessages = async (req, res) => {
             });
         }
 
-        const chat = await Chat.findById(chatId);
+        let chat = await Chat.findById(chatId);
 
         if (!chat) {
             return res.status(404).json({
@@ -283,11 +283,21 @@ export const sendMessages = async (req, res) => {
             }
         );
 
-        return res.status(201).json({
-            success: true,
-            message: "Message sent successfully",
-            data: message
+        chat = await Chat.findById(chatId).select("users");
+        chat.users.forEach((user) => {
+            io.to(user._id.toString()).emit("newMessageNotification", { chatId });
         });
+
+        io.to(chatId).emit("receiveMessage", {
+            _id: message._id,
+            content: message.content,
+            chatId,
+            sender: message.sender,
+            createdAt: message.createdAt,
+            readBy: message.readBy,
+        });
+
+        return res.status(201).json({ success: true, message: "Message sent successfully", data: message });
 
     } catch (error) {
 
