@@ -94,8 +94,7 @@ export default function Chat() {
         //     }
         //     // queryClient.invalidateQueries({ queryKey: ["chats"] });
         // };
-        let timeout;
-
+       
         const handleReceiveMessage = (msgData) => {
 
             if (msgData.chatId === chatId) {
@@ -117,18 +116,16 @@ export default function Chat() {
                     }
                 );
 
-                clearTimeout(timeout);
-
-                timeout = setTimeout(() => {
                     markRead(chatId);
-                }, 1000);
+                
             }
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
         };
 
         const handleMessagesRead = ({ chatId: readChatId }) => {
-            // if (readChatId === chatId) {
-            //     queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
-            // }
+            if (readChatId === chatId) {
+                queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
+            }
         };
 
         socket.on("receiveMessage", handleReceiveMessage);

@@ -257,8 +257,7 @@ export const sendMessages = async (req, res) => {
             }
         }
 
-        console.time("message-send");
-
+        
         let message = await Message.create({
             sender: req.user.id,
             content,
@@ -273,14 +272,10 @@ export const sendMessages = async (req, res) => {
             });
         }
 
-        console.timeLog("message-send", "message created");
-
         message = await message.populate(
             "sender",
             "username email name"
         );
-
-        console.timeLog("message-send", "sender populated");
 
         await Chat.findByIdAndUpdate(
             chatId,
@@ -288,10 +283,6 @@ export const sendMessages = async (req, res) => {
                 latestMessage: message._id,
             }
         );
-
-        console.timeLog("message-send", "chat updated");
-
-        console.timeEnd("message-send");
 
         chat = await Chat.findById(chatId).select("users");
         chat.users.forEach((user) => {
