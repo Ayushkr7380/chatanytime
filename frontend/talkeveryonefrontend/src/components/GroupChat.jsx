@@ -65,14 +65,65 @@ export default function GroupChat() {
 
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
-        socket.on("typing", ({ name }) => {
-            setOtherTyping(true);
-            setTyperName(name || "Someone");
-        });
-        socket.on("stopTyping", () => {
-            setOtherTyping(false);
-            setTyperName("");
-        });
+        socket.on(
+            "typing",
+            ({
+                chatId: typingChatId,
+                userId: typingUserId,
+                name
+            }) => {
+
+                if (typingChatId !== chatId)
+                    return;
+
+                if (
+                    typingUserId ===
+                    meData?.user?._id
+                )
+                    return;
+
+                setOtherTyping(true);
+
+                setTyperName(
+                    name || "Someone"
+                );
+            }
+        );
+        socket.on(
+            "stopTyping",
+            ({
+                chatId: typingChatId
+            }) => {
+
+                if (
+                    typingChatId !== chatId
+                )
+                    return;
+
+                setOtherTyping(false);
+
+                setTyperName("");
+            }
+        );
+
+        socket.on(
+            "removedFromGroup",
+            ({ chatId: removedChatId }) => {
+
+                if (
+                    removedChatId === chatId
+                ) {
+
+                    navigate("/");
+
+                }
+
+                queryClient.invalidateQueries({
+                    queryKey: ["chats"]
+                });
+
+            }
+        );
 
         return () => {
             socket.off("connect", joinRoom);
@@ -80,8 +131,10 @@ export default function GroupChat() {
             socket.off("messagesRead", handleMessagesRead);
             socket.off("typing");
             socket.off("stopTyping");
+            socket.off("removedFromGroup");
         };
-    }, [chatId, queryClient]);
+    }, [chatId, queryClient, meData?.user?._id,
+    navigate , markRead]);
 
     const { register, handleSubmit, watch, reset } = useForm();
     const messageValue = watch("content");
@@ -157,7 +210,10 @@ export default function GroupChat() {
                     <MessageBubble
                         key={msg._id}
                         text={msg.content}
-                        isSender={msg?.sender?._id === meData?.user?._id}
+                        messageType={msg.messageType}
+                        isSender={
+                            msg?.sender?._id === meData?.user?._id
+                        }
                         senderName={
                             msg?.sender?._id !== meData?.user?._id
                                 ? msg?.sender?.name
@@ -170,7 +226,11 @@ export default function GroupChat() {
                         })}
                     />
                 ))}
-                {otherTyping && <TypingBubble />}
+                {otherTyping && (
+                    <TypingBubble
+                        name={typerName}
+                    />
+                )}
                 <div ref={bottomRef} />
             </div>
 

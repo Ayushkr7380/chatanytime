@@ -1,28 +1,33 @@
-import {Schema , model} from "mongoose";
+import { Schema, model } from "mongoose";
 
 const messageSchema = new Schema({
-    sender:{
-        type:Schema.Types.ObjectId,
-        ref:"User"
+    sender: {
+        type: Schema.Types.ObjectId,
+        ref: "User"
     },
-    content:{
-        type:String,
-        trim:true,
-        required:true,
+    content: {
+        type: String,
+        trim: true,
+        required: true,
     },
-    chat:{
-        type:Schema.Types.ObjectId,
-        ref:"Chat",
+    chat: {
+        type: Schema.Types.ObjectId,
+        ref: "Chat",
     },
-    readBy:[{
-        type:Schema.Types.ObjectId,
-        ref:"User"
-    }]
+    readBy: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    messageType: {
+        type: String,
+        enum: ["user", "system"],
+        default: "user"
+    }
 
 
-},{
-    timestamps:true
+}, {
+    timestamps: true
 });
 
 
-export const Message = model("Message",messageSchema);
+export const Message = model("Message", messageSchema);

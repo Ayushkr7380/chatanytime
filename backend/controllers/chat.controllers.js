@@ -3,30 +3,50 @@ import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import { User } from "../models/users.model.js";
 
-export const privateChat = async(req,res)=>{
+
+const createSystemMessage = async (chatId, content) => {
+
+    const message = await Message.create({
+        chat: chatId,
+        content,
+        messageType: "system",
+        readBy: []
+    });
+
+    await Chat.findByIdAndUpdate(
+        chatId,
+        {
+            latestMessage: message._id
+        }
+    );
+
+    return message;
+};
+
+export const privateChat = async (req, res) => {
 
     try {
         const { id } = req.user;
 
         const othersId = req.params.id;
 
-        if(!othersId){
+        if (!othersId) {
             return res.status(400).json({
-                success:false,
-                message:"UserId is required to start conversation."
+                success: false,
+                message: "UserId is required to start conversation."
             })
         }
 
-        
 
-        
+
+
 
         //prevent self chat
 
-        if(id.toString() === othersId.toString()){
+        if (id.toString() === othersId.toString()) {
             return res.status(400).json({
-                success:false,
-                message:"You cannot chat with yourself."
+                success: false,
+                message: "You cannot chat with yourself."
             })
         }
 
@@ -34,86 +54,86 @@ export const privateChat = async(req,res)=>{
 
         const otherUser = await User.findById(othersId).select("name -_id");
 
-        const {name} = otherUser;
+        const { name } = otherUser;
 
-        if(!otherUser){
+        if (!otherUser) {
             return res.status(400).json({
-                success:false,
-                message:"User not found."
+                success: false,
+                message: "User not found."
             })
         }
 
         //Check if the chat already exists
 
         const chat = await Chat.findOne({
-            
-            isGroupChat:false,
-            users:{$all : [id , othersId]}
-        }).populate("users","-password").populate("latestMessage")
+
+            isGroupChat: false,
+            users: { $all: [id, othersId] }
+        }).populate("users", "-password").populate("latestMessage")
 
 
 
         //if chat exists then return here
-        if(chat){
+        if (chat) {
             return res.status(200).json({
-                success:true,
-                message:"Chat already exists",
+                success: true,
+                message: "Chat already exists",
                 chat
             })
         }
 
         //create new chat
         const newChat = await Chat.create({
-            
-            isGroupChat :false,
-            users:[id , othersId]
+
+            isGroupChat: false,
+            users: [id, othersId]
         });
 
-        if(!newChat){
+        if (!newChat) {
             return res.status(400).json({
-                success:false,
-                message:"Failed to create new chat."
+                success: false,
+                message: "Failed to create new chat."
             })
         }
 
-        const findChat = await Chat.findById(newChat._id).populate("users","-password");
+        const findChat = await Chat.findById(newChat._id).populate("users", "-password");
 
-        if(!findChat){
+        if (!findChat) {
             return res.status(400).json({
-                success:false,
-                message:"Failed to load chat."
+                success: false,
+                message: "Failed to load chat."
             })
         }
 
         res.status(200).json({
-            success:true,
-            message:"New chat created successfully.",
-            chat : findChat
+            success: true,
+            message: "New chat created successfully.",
+            chat: findChat
         })
 
     } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         })
     }
 
 }
 
-export const groupChat = async(req,res)=>{
+export const groupChat = async (req, res) => {
     try {
-        const { groupName , groupMembers } = req.body;
-        if(!groupName || !groupMembers){
+        const { groupName, groupMembers } = req.body;
+        if (!groupName || !groupMembers) {
             return res.status(400).json({
-                success:false,
-                message:"All fields are required."
+                success: false,
+                message: "All fields are required."
             })
         }
 
-        if(groupMembers.length <2){
+        if (groupMembers.length < 2) {
             return res.status(400).json({
-                success:false,
-                message:"Group chat needs at least 3 users"
+                success: false,
+                message: "Group chat needs at least 3 users"
             })
         }
 
@@ -121,16 +141,16 @@ export const groupChat = async(req,res)=>{
         groupMembers.push(req.user.id);
 
         const groupChat = await Chat.create({
-            chatName:groupName,
+            chatName: groupName,
             isGroupChat: true,
-            users:groupMembers,
-            groupAdmin:req.user.id
+            users: groupMembers,
+            groupAdmin: req.user.id
         });
 
-        if(!groupChat){
+        if (!groupChat) {
             return res.status(400).json({
-                success:false,
-                message:"Failed to create group."
+                success: false,
+                message: "Failed to create group."
             })
         }
 
@@ -138,16 +158,32 @@ export const groupChat = async(req,res)=>{
             .populate("users", "-password")
             .populate("groupAdmin", "-password");
 
+        await createSystemMessage(
+            groupChat._id,
+            `${req.user.name} created the group`
+        );
+
+        fullGroupChat.users.forEach((user) => {
+
+            io.to(user._id.toString()).emit(
+                "addedToGroup",
+                {
+                    chatId: fullGroupChat._id
+                }
+            );
+
+        });
+
         res.status(201).json({
-            success:true,
-            message:"Group created successfully.",
-            chat : groupChat
+            success: true,
+            message: "Group created successfully.",
+            chat: groupChat
         })
 
     } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         })
     }
 };
@@ -262,20 +298,20 @@ export const sendMessages = async (req, res) => {
 
     }
 };
-export const myAllChats = async(req,res)=>{
+export const myAllChats = async (req, res) => {
     try {
         const chats = await Chat.find({
-            users:{$in:[req.user.id]}
+            users: { $in: [req.user.id] }
         })
-        .sort({ updatedAt: -1 })
-        .populate("users" , "-password")
-        .populate("latestMessage");
+            .sort({ updatedAt: -1 })
+            .populate("users", "-password")
+            .populate("latestMessage");
 
-        if(!chats){
+        if (!chats) {
             return res.status(400).json({
-                success:false,
-                message:"Failed to fetch chats."
-            }); 
+                success: false,
+                message: "Failed to fetch chats."
+            });
         }
 
         const chatsWithUnread = await Promise.all(
@@ -293,64 +329,64 @@ export const myAllChats = async(req,res)=>{
         );
 
         return res.status(200).json({
-            success:true,
-            message:"All chats fetched successfully.",
-            chats : chatsWithUnread,
+            success: true,
+            message: "All chats fetched successfully.",
+            chats: chatsWithUnread,
         });
     } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
     }
 }
 
-export const getMessages = async(req,res)=>{
+export const getMessages = async (req, res) => {
     try {
-        const  chatId  = req.params.chatId;
+        const chatId = req.params.chatId;
 
         console.log(chatId);
-        
 
-        const messages = await Message.find({chat : chatId})
-        .sort({ createdAt: 1 })
-        .populate("sender" , "email username name")
-        .populate({
-            path:"chat",
-            populate:[
-                {
-                    path:"users",
-                    select:"username name email"
-                },
-                {
-                    path:"latestMessage",
-                    populate:{
-                        path:"sender",
-                        select:"name"
+
+        const messages = await Message.find({ chat: chatId })
+            .sort({ createdAt: 1 })
+            .populate("sender", "email username name")
+            .populate({
+                path: "chat",
+                populate: [
+                    {
+                        path: "users",
+                        select: "username name email"
+                    },
+                    {
+                        path: "latestMessage",
+                        populate: {
+                            path: "sender",
+                            select: "name"
+                        }
+
                     }
-                    
-                }
-            ]
-        });
+                ]
+            });
 
 
 
-        if(!messages){
+        if (!messages) {
             return res.status(400).json({
-                success:false,
-                message:"Failed to fetch the messages."
+                success: false,
+                message: "Failed to fetch the messages."
             })
         }
 
         return res.status(201).json({
-            success:true,
-            message:"Messages fetched successfully.",
+            success: true,
+            message: "Messages fetched successfully.",
             messages
         })
     } catch (error) {
         return res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         })
     }
 }
@@ -363,7 +399,7 @@ export const markMessagesRead = async (req, res) => {
         await Message.updateMany(
             {
                 chat: chatId,
-                readBy: { $nin: [req.user.id] } 
+                readBy: { $nin: [req.user.id] }
             },
             {
                 $push: { readBy: req.user.id }
@@ -404,14 +440,14 @@ export const leaveGroup = async (req, res) => {
             });
         }
 
-        
+
         if (group.groupAdmin.toString() === userId.toString()) {
             const remainingUsers = group.users.filter(
                 (u) => u.toString() !== userId.toString()
             );
 
             if (remainingUsers.length === 0) {
-                
+
                 await Chat.findByIdAndDelete(chatId);
                 return res.status(200).json({
                     success: true,
@@ -419,7 +455,7 @@ export const leaveGroup = async (req, res) => {
                 });
             }
 
-           
+
             const randomAdmin = remainingUsers[
                 Math.floor(Math.random() * remainingUsers.length)
             ];
@@ -427,12 +463,28 @@ export const leaveGroup = async (req, res) => {
             group.groupAdmin = randomAdmin;
         }
 
-        
+        const currentUser = await User.findById(
+            userId
+        ).select("name");
+
+        await createSystemMessage(
+            chatId,
+            `${currentUser.name} left the group`
+        );
+
+
         group.users = group.users.filter(
             (u) => u.toString() !== userId.toString()
         );
 
         await group.save();
+
+        io.to(chatId).emit(
+            "memberLeft",
+            {
+                chatId
+            }
+        );
 
         return res.status(200).json({
             success: true,
@@ -471,7 +523,7 @@ export const addMember = async (req, res) => {
             });
         }
 
-       
+
         if (group.groupAdmin.toString() !== currentUserId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -479,7 +531,7 @@ export const addMember = async (req, res) => {
             });
         }
 
-        
+
         const alreadyMember = group.users.some(
             (u) => u.toString() === userId.toString()
         );
@@ -494,9 +546,33 @@ export const addMember = async (req, res) => {
         group.users.push(userId);
         await group.save();
 
+        const addedUser = await User.findById(
+            userId
+        ).select("name");
+
+        const currentUser = await User.findById(
+            currentUserId
+        ).select("name");
+
+        await createSystemMessage(
+            chatId,
+            `${currentUser.name} added ${addedUser.name} `
+        );
+
         const updatedGroup = await Chat.findById(chatId)
             .populate("users", "-password")
             .populate("groupAdmin", "-password");
+
+        io.to(userId).emit("addedToGroup", {
+            chatId
+        });
+
+        io.to(chatId).emit(
+            "memberAdded",
+            {
+                chatId
+            }
+        );
 
         return res.status(200).json({
             success: true,
@@ -519,6 +595,7 @@ export const removeMember = async (req, res) => {
         const currentUserId = req.user.id;
 
         const group = await Chat.findById(chatId);
+
         const isMember = group.users.some(
             (u) => u.toString() === userId.toString()
         );
@@ -538,7 +615,7 @@ export const removeMember = async (req, res) => {
             });
         }
 
-        
+
         if (group.groupAdmin.toString() !== currentUserId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -546,7 +623,7 @@ export const removeMember = async (req, res) => {
             });
         }
 
-       
+
         if (userId.toString() === currentUserId.toString()) {
             return res.status(400).json({
                 success: false,
@@ -554,11 +631,38 @@ export const removeMember = async (req, res) => {
             });
         }
 
+        const removedUser = await User.findById(
+            userId
+        ).select("name");
+
+        const currentUser = await User.findById(
+            currentUserId
+        ).select("name");
+
         group.users = group.users.filter(
             (u) => u.toString() !== userId.toString()
         );
 
         await group.save();
+
+        await createSystemMessage(
+            chatId,
+            `${removedUser.name} was removed by ${currentUser.name}`
+        );
+
+        io.to(userId).emit(
+            "removedFromGroup",
+            {
+                chatId
+            }
+        );
+
+        io.to(chatId).emit(
+            "memberRemoved",
+            {
+                chatId
+            }
+        );
 
         return res.status(200).json({
             success: true,
@@ -599,7 +703,7 @@ export const makeAdmin = async (req, res) => {
             });
         }
 
-        
+
         if (group.groupAdmin.toString() !== currentUserId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -607,7 +711,7 @@ export const makeAdmin = async (req, res) => {
             });
         }
 
-        
+
         if (group.groupAdmin.toString() === userId.toString()) {
             return res.status(400).json({
                 success: false,
@@ -617,6 +721,22 @@ export const makeAdmin = async (req, res) => {
 
         group.groupAdmin = userId;
         await group.save();
+
+        const newAdmin = await User.findById(
+            userId
+        ).select("name");
+
+        await createSystemMessage(
+            chatId,
+            `${newAdmin.name} is now an admin`
+        );
+
+        io.to(chatId).emit(
+            "adminChanged",
+            {
+                chatId
+            }
+        );
 
         return res.status(200).json({
             success: true,
@@ -665,9 +785,29 @@ export const renameGroup = async (req, res) => {
             });
         }
 
+        const oldGroupName = group.chatName;
+
         group.chatName = groupName.trim();
 
         await group.save();
+
+        const currentUser = await User.findById(
+            currentUserId
+        ).select("name");
+
+
+
+        await createSystemMessage(
+            chatId,
+            `${currentUser.name} changed the group name from "${oldGroupName}" to "${group.chatName}"`
+        );
+
+        io.to(chatId).emit(
+            "groupRenamed",
+            {
+                chatId
+            }
+        );
 
         return res.status(200).json({
             success: true,

@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 
 import { useSearch } from "@/hooks/useSearch";
 import { useAddMember } from "@/hooks/useAddMember";
+import { useMe } from "@/hooks/useMe";
+import { useChats } from "@/hooks/useChats";
 
 export default function AddMemberDialog({
     chatId,
@@ -24,12 +26,23 @@ export default function AddMemberDialog({
     const [keyword, setKeyword] =
         useState("");
 
-    const [debouncedKeyword,
-        setDebouncedKeyword] =
-        useState("");
+    const [
+        debouncedKeyword,
+        setDebouncedKeyword,
+    ] = useState("");
 
-    const { data: users } =
+    const { data: users = [] } =
         useSearch(debouncedKeyword);
+
+    const { data: meData } =
+        useMe();
+
+    const { data: chats = [] } =
+        useChats();
+
+    const group = chats.find(
+        (chat) => chat._id === chatId
+    );
 
     const {
         mutate: addMember,
@@ -39,7 +52,9 @@ export default function AddMemberDialog({
 
         setKeyword(e.target.value);
 
-        clearTimeout(window.groupSearch);
+        clearTimeout(
+            window.groupSearch
+        );
 
         window.groupSearch =
             setTimeout(() => {
@@ -54,18 +69,30 @@ export default function AddMemberDialog({
     const handleAddMember =
         (userId) => {
 
-        addMember(
-            {
-                chatId,
-                userId,
-            },
-            {
-                onSuccess: () => {
-                    setOpen(false);
+            addMember(
+                {
+                    chatId,
+                    userId,
                 },
-            }
+                {
+                    onSuccess: () => {
+                        setOpen(false);
+                    },
+                }
+            );
+        };
+
+    const availableUsers =
+        users.filter(
+            (user) =>
+                user._id !==
+                    meData?.user?._id &&
+                !group?.users?.some(
+                    (member) =>
+                        member._id ===
+                        user._id
+                )
         );
-    };
 
     return (
         <Dialog
@@ -90,9 +117,11 @@ export default function AddMemberDialog({
             <DialogContent>
 
                 <DialogHeader>
+
                     <DialogTitle>
                         Add Member
                     </DialogTitle>
+
                 </DialogHeader>
 
                 <Input
@@ -109,39 +138,54 @@ export default function AddMemberDialog({
                     "
                 >
 
-                    {users?.map((user) => (
-
-                        <div
-                            key={user._id}
-                            onClick={() =>
-                                handleAddMember(
-                                    user._id
-                                )
-                            }
+                    {availableUsers.length === 0 ? (
+                        <p
                             className="
-                                p-3
-                                border-b
-                                cursor-pointer
-                                hover:bg-slate-50
+                                text-center
+                                text-sm
+                                text-slate-500
+                                py-4
                             "
                         >
+                            No users found
+                        </p>
+                    ) : (
+                        availableUsers.map(
+                            (user) => (
 
-                            <p>
-                                {user.name}
-                            </p>
+                                <div
+                                    key={user._id}
+                                    onClick={() =>
+                                        handleAddMember(
+                                            user._id
+                                        )
+                                    }
+                                    className="
+                                        p-3
+                                        border-b
+                                        cursor-pointer
+                                        hover:bg-slate-50
+                                    "
+                                >
 
-                            <p
-                                className="
-                                    text-xs
-                                    text-slate-500
-                                "
-                            >
-                                @{user.username}
-                            </p>
+                                    <p>
+                                        {user.name}
+                                    </p>
 
-                        </div>
+                                    <p
+                                        className="
+                                            text-xs
+                                            text-slate-500
+                                        "
+                                    >
+                                        @{user.username}
+                                    </p>
 
-                    ))}
+                                </div>
+
+                            )
+                        )
+                    )}
 
                 </div>
 

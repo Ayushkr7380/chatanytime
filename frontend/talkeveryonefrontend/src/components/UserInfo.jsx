@@ -15,6 +15,12 @@ export default function UserInfo() {
 
     const { data: chats } = useChats();
     const { data: meData } = useMe();
+     const { data: blockStatus } =useBlockStatus(otherUser?._id);
+
+    const { mutate: blockUser,isPending: blockingUser} = useBlockUser();
+
+    const { mutate: unblockUser,isPending: unblockingUser} = useUnblockUser();
+
 
     if (!chats) {
         return (
@@ -41,19 +47,7 @@ export default function UserInfo() {
             user._id !== meData?.user?._id
     );
 
-    const { data: blockStatus } =
-        useBlockStatus(otherUser?._id);
-
-    const {
-        mutate: blockUser,
-        isPending: blockingUser,
-    } = useBlockUser();
-
-    const {
-        mutate: unblockUser,
-        isPending: unblockingUser,
-    } = useUnblockUser();
-
+   
     const handleBlockUser = () => {
         blockUser(otherUser._id);
     };

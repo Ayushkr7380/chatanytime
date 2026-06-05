@@ -5,7 +5,6 @@ import { Outlet } from "react-router-dom";
 import { SearchUser } from "./SearchUser";
 import { useContext, useEffect } from "react";
 import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext";
-// import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png";
 import Skeleton from "@/components/Skeleton";
 import { useLocation } from "react-router-dom";
 import ProfileSheet from "./ProfileSheet";

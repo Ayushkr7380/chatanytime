@@ -1,9 +1,8 @@
 import { FaUserCircle } from "react-icons/fa";
 import { useContext, useEffect, useRef, useState } from "react";
 import {
-  useLocation,
-  useNavigate,
-  useParams,
+    useNavigate,
+    useParams,
 } from "react-router-dom";
 import { MessageBubble } from "./MessageBubble";
 import { useForm } from "react-hook-form";
@@ -20,7 +19,7 @@ import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext
 import { TypingBubble } from "./TypingBubble";
 import { useBlockStatus } from "@/hooks/useBlockStatus";
 import { useUnblockUser } from "@/hooks/useUnblockUser";
-import { Button } from "@/components/ui/button";
+import { useChats } from "@/hooks/useChats";
 
 export default function Chat() {
 
@@ -28,10 +27,8 @@ export default function Chat() {
     const navigate = useNavigate();
     const { chatId } = useParams();
 
-    const location = useLocation();
-    const createdChat = location.state?.chat;
-
     const { data: meData } = useMe();
+    const { data: chats = [] } = useChats();
 
     const queryClient = useQueryClient();
 
@@ -41,17 +38,24 @@ export default function Chat() {
     const { mutate: markRead } = useMarkRead();
 
     const { startTyping, stopTyping } = useContext(CreateSocketContext);
-    // const [isTyping, setIsTyping] = useState(false);
     const [otherTyping, setOtherTyping] = useState(false);
 
     const typingTimeoutRef = useRef(null);
 
-    
 
+    const currentChat = chats.find(
+        (chat) => chat._id === chatId
+    );
 
-    const otherUserId = messages?.length > 0
-        ? messages[0]?.chat?.users?.find((u) => u?._id !== meData?.user?._id)?._id
-        : createdChat?.users?.find((u) => u?._id !== meData?.user?._id)?._id;
+    const otherUser =
+        currentChat?.users?.find(
+            (u) =>
+                u._id !==
+                meData?.user?._id
+        );
+
+    const otherUserId =
+        otherUser?._id;
 
     const { data: blockStatus } = useBlockStatus(otherUserId);
 
@@ -80,29 +84,29 @@ export default function Chat() {
         }
     };
 
-    
-    const handleTyping = () => {
-            startTyping(chatId);
 
-            
-            clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = setTimeout(() => {
-                stopTyping(chatId);
-            }, 2000);
-     };
+    const handleTyping = () => {
+        startTyping(chatId);
+
+
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            stopTyping(chatId);
+        }, 2000);
+    };
 
     useEffect(() => {
-            markRead(chatId); 
-        }, [chatId]);
+        markRead(chatId);
+    }, [chatId]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "instant" });
-    }, [messages,otherTyping]);
+    }, [messages, otherTyping]);
 
 
 
     useEffect(() => {
-        
+
         const joinRoom = () => {
             socket.emit("joinChat", chatId);
         };
@@ -121,7 +125,7 @@ export default function Chat() {
 
             if (msgData.chatId === chatId) {
                 queryClient.setQueryData(["messages", chatId], (prev) => {
-                    console.log("Prev messages:", prev); 
+                    console.log("Prev messages:", prev);
                     return [...(prev || []), msgData];
                 });
 
@@ -137,9 +141,9 @@ export default function Chat() {
             }
         };
 
-        
 
-        
+
+
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
 
@@ -152,8 +156,63 @@ export default function Chat() {
             }
         });
 
-        socket.on("typing", () => setOtherTyping(true));
-        socket.on("stopTyping", () => setOtherTyping(false));
+        socket.on(
+            "typing",
+            ({
+                chatId: typingChatId
+            }) => {
+
+                if (
+                    typingChatId !== chatId
+                ) return;
+
+                setOtherTyping(true);
+            }
+        );
+
+        socket.on(
+            "stopTyping",
+            ({
+                chatId: typingChatId
+            }) => {
+
+                if (
+                    typingChatId !== chatId
+                ) return;
+
+                setOtherTyping(false);
+            }
+        );
+
+        socket.on(
+            "userBlocked",
+            () => {
+
+                queryClient.invalidateQueries({
+                    queryKey: ["block-status"]
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: ["status"]
+                });
+
+            }
+        );
+
+        socket.on(
+            "userUnblocked",
+            () => {
+
+                queryClient.invalidateQueries({
+                    queryKey: ["block-status"]
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: ["status"]
+                });
+
+            }
+        );
 
         return () => {
             socket.off("connect", joinRoom);
@@ -162,6 +221,8 @@ export default function Chat() {
             socket.off("messagesRead", handleMessagesRead);
             socket.off("typing");
             socket.off("stopTyping");
+            socket.off("userBlocked");
+            socket.off("userUnblocked");
         };
     }, [chatId, queryClient]);
 
@@ -189,11 +250,10 @@ export default function Chat() {
                 {[...Array(8)].map((_, i) => (
                     <div
                         key={i}
-                        className={`flex ${
-                            i % 2 === 0
-                                ? "justify-start"
-                                : "justify-end"
-                        }`}
+                        className={`flex ${i % 2 === 0
+                            ? "justify-start"
+                            : "justify-end"
+                            }`}
                     >
                         <Skeleton className="h-12 w-52 rounded-2xl" />
                     </div>
@@ -202,16 +262,9 @@ export default function Chat() {
         );
     }
 
-    const otherUserName =
-        messages?.length > 0
-            ? messages[0]?.chat?.users?.find(
-                  (u) => u?._id !== meData?.user?._id
-              )?.name
-            : createdChat?.users?.find(
-                  (u) => u?._id !== meData?.user?._id
-              )?.name;
 
-    
+    const otherUserName = otherUser?.name;
+
 
     return (
         <div className="w-full h-screen flex flex-col bg-slate-50">
@@ -260,8 +313,14 @@ export default function Chat() {
 
                             {/* Typing / Online / Last seen */}
                             {otherTyping ? (
+
                                 <p className="text-xs text-violet-500 animate-pulse">
                                     typing...
+                                </p>
+
+                            ) : statusData?.hidden ? (
+                                <p className="text-xs text-slate-400">
+                                    Status unavailable
                                 </p>
                             ) : statusData?.isOnline ? (
                                 <p className="text-xs text-green-500">
@@ -305,10 +364,10 @@ export default function Chat() {
                             hour12: true,
                         })}
                         isRead={msg?.readBy?.includes(otherUserId)}
-                        />
-                    ))}
-                <div ref={bottomRef}/>
-                    {otherTyping && <TypingBubble />}
+                    />
+                ))}
+                <div ref={bottomRef} />
+                {otherTyping && <TypingBubble />}
             </div>
 
             {/* Input */}

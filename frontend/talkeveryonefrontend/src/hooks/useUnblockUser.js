@@ -16,8 +16,11 @@ export const useUnblockUser = () => {
 
             queryClient.invalidateQueries({
                 queryKey: ["chats"]
-            }); 
-
+            });
+            
+            queryClient.invalidateQueries({
+                queryKey: ["status"]
+            });
         }
     });
 };
