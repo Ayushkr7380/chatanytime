@@ -102,7 +102,19 @@ export default function Chat() {
 
                 queryClient.setQueryData(
                     ["messages", chatId],
-                    (prev) => [...(prev || []), msgData]
+                    (prev = []) => {
+
+                        const filtered = prev.filter(
+                            (msg) =>
+                                !(
+                                    msg.optimistic &&
+                                    msg.content === msgData.content &&
+                                    msg.sender?._id === msgData.sender?._id
+                                )
+                        );
+
+                        return [...filtered, msgData];
+                    }
                 );
 
                 clearTimeout(timeout);
