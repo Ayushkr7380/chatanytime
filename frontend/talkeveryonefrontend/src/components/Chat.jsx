@@ -84,21 +84,39 @@ export default function Chat() {
         if (socket.connected) joinRoom();
         socket.on("connect", joinRoom);
 
+        // const handleReceiveMessage = (msgData) => {
+        //     if (msgData.chatId === chatId) {
+        //         queryClient.setQueryData(["messages", chatId], (prev) => [
+        //             ...(prev || []),
+        //             msgData,
+        //         ]);
+        //         // markRead(chatId);
+        //     }
+        //     // queryClient.invalidateQueries({ queryKey: ["chats"] });
+        // };
+        let timeout;
+
         const handleReceiveMessage = (msgData) => {
+
             if (msgData.chatId === chatId) {
-                queryClient.setQueryData(["messages", chatId], (prev) => [
-                    ...(prev || []),
-                    msgData,
-                ]);
-                markRead(chatId);
+
+                queryClient.setQueryData(
+                    ["messages", chatId],
+                    (prev) => [...(prev || []), msgData]
+                );
+
+                clearTimeout(timeout);
+
+                timeout = setTimeout(() => {
+                    markRead(chatId);
+                }, 1000);
             }
-            queryClient.invalidateQueries({ queryKey: ["chats"] });
         };
 
         const handleMessagesRead = ({ chatId: readChatId }) => {
-            if (readChatId === chatId) {
-                queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
-            }
+            // if (readChatId === chatId) {
+            //     queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
+            // }
         };
 
         socket.on("receiveMessage", handleReceiveMessage);
