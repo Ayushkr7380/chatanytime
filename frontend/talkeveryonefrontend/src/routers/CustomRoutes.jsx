@@ -11,6 +11,7 @@ import NotFoundRedirect from "@/components/NotFoundRedirect";
 import GroupChat from "@/components/GroupChat"
 import GroupInfo from "@/components/GroupInfo";
 import UserInfo from "@/components/UserInfo";
+import NewChat from "@/components/NewChat";
 
 function CustomRoutes() {
     return (
@@ -52,6 +53,8 @@ function CustomRoutes() {
                             path="chat/:chatId/info"
                             element={<UserInfo />}
                         />
+
+                        <Route path="new-chat/:userId" element={<NewChat />} />
 
                 </Route>
 

@@ -190,78 +190,85 @@ export const groupChat = async (req, res) => {
 
 export const sendMessages = async (req, res) => {
     try {
+        const { content, chatId, receiverId } = req.body;
 
-        const { content, chatId } = req.body;
-
-        if (!content || !chatId) {
+        if (!content) {
             return res.status(400).json({
                 success: false,
-                message: "All fields are required."
+                message: "Content is required."
             });
         }
 
-        let chat = await Chat.findById(chatId);
-
-        if (!chat) {
-            return res.status(404).json({
+        if (!chatId && !receiverId) {
+            return res.status(400).json({
                 success: false,
-                message: "Chat not found."
+                message: "chatId or receiverId is required."
             });
+        }
+
+        let chat;
+
+        if (chatId) {
+            chat = await Chat.findById(chatId);
+            if (!chat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Chat not found."
+                });
+            }
+        } else {
+            // pehle check karo exist karti hai
+            chat = await Chat.findOne({
+                isGroupChat: false,
+                users: { $all: [req.user.id, receiverId] }
+            });
+
+            // nahi karti — banao
+            if (!chat) {
+                chat = await Chat.create({
+                    isGroupChat: false,
+                    users: [req.user.id, receiverId]
+                });
+            }
         }
 
         // Block check only for private chat
         if (!chat.isGroupChat) {
 
-            const receiverId = chat.users.find(
-                (id) =>
-                    id.toString() !==
-                    req.user.id.toString()
-            );
+            const otherId = chatId
+                ? chat.users.find(id => id.toString() !== req.user.id.toString())
+                : receiverId;
 
-            const sender = await User.findById(
-                req.user.id
-            );
+            const sender = await User.findById(req.user.id);
+            const receiver = await User.findById(otherId);
 
-            const receiver = await User.findById(
-                receiverId
+            const iBlockedHim = sender.blockedUsers.some(
+                (id) => id.toString() === otherId.toString()
             );
-
-            const iBlockedHim =
-                sender.blockedUsers.some(
-                    (id) =>
-                        id.toString() ===
-                        receiverId.toString()
-                );
 
             if (iBlockedHim) {
                 return res.status(403).json({
                     success: false,
-                    message:
-                        "You have blocked this user."
+                    message: "You have blocked this user."
                 });
             }
 
-            const heBlockedMe =
-                receiver.blockedUsers.some(
-                    (id) =>
-                        id.toString() ===
-                        req.user.id.toString()
-                );
+            const heBlockedMe = receiver.blockedUsers.some(
+                (id) => id.toString() === req.user.id.toString()
+            );
 
             if (heBlockedMe) {
                 return res.status(403).json({
                     success: false,
-                    message:
-                        "You cannot send messages to this user."
+                    message: "You cannot send messages to this user."
                 });
             }
         }
 
-        
         let message = await Message.create({
             sender: req.user.id,
             content,
-            chat: chatId,
+            chat: chat._id,
             readBy: [req.user.id],
         });
 
@@ -272,41 +279,37 @@ export const sendMessages = async (req, res) => {
             });
         }
 
-        message = await message.populate(
-            "sender",
-            "username email name"
-        );
+        message = await message.populate("sender", "username email name");
 
-        await Chat.findByIdAndUpdate(
-            chatId,
-            {
-                latestMessage: message._id,
-            }
-        );
-
-        chat = await Chat.findById(chatId).select("users");
-        chat.users.forEach((user) => {
-            io.to(user._id.toString()).emit("newMessageNotification", { chatId });
+        await Chat.findByIdAndUpdate(chat._id, {
+            latestMessage: message._id,
         });
 
-        io.to(chatId).emit("receiveMessage", {
+        const freshChat = await Chat.findById(chat._id).select("users");
+        freshChat.users.forEach((user) => {
+            io.to(user._id.toString()).emit("newMessageNotification", { chatId: chat._id });
+        });
+
+        io.to(chat._id.toString()).emit("receiveMessage", {
             _id: message._id,
             content: message.content,
-            chatId,
+            chatId: chat._id,
             sender: message.sender,
             createdAt: message.createdAt,
             readBy: message.readBy,
         });
 
-        return res.status(201).json({ success: true, message: "Message sent successfully", data: message });
+        return res.status(201).json({
+            success: true,
+            message: "Message sent successfully",
+            data: message
+        });
 
     } catch (error) {
-
         return res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
 };
 export const myAllChats = async (req, res) => {

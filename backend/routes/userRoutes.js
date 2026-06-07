@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus} from "../controllers/user.controllers.js";
+import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById} from "../controllers/user.controllers.js";
 import isLoggedIn from "../middlewares/isLoggedIn.js";
 
 const router = Router();
@@ -31,5 +31,7 @@ router.get(
     isLoggedIn,
     getBlockStatus
 );
+
+router.get("/user/:userId", isLoggedIn, getUserById);
 
 export default router;

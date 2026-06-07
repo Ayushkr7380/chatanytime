@@ -18,8 +18,10 @@ import { Label } from "@/components/ui/label";
 import { FaPlus } from "react-icons/fa";
 import { useSearch } from "@/hooks/useSearch";
 import { useCreateChat } from "@/hooks/useCreateChat";
+import { useNavigate } from "react-router-dom";
 
 export const SearchUser = () => {
+    const navigate = useNavigate();
 
     const [open, setOpen] = useState(false);
 
@@ -29,7 +31,7 @@ export const SearchUser = () => {
     const { mutate: createChat } = useCreateChat();
 
     const handleCreateChat = (userId) => {
-        createChat(userId);
+        navigate(`/new-chat/${userId}`);
         setOpen(false);
     };
 

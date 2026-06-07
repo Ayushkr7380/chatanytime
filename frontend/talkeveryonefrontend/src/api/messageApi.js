@@ -9,10 +9,10 @@ export const getMessages = async (chatId) => {
   return response.data.messages;
 };
 
-export const sendMessageApi = async ({ content, chatId }) => {
+export const sendMessageApi = async ({ content, chatId ,receiverId }) => {
   const response = await axios.post(
     `${backendURL}/user/message`,
-    { content, chatId },
+    { content, chatId ,receiverId  },
     { withCredentials: true }
   );
   return response.data;

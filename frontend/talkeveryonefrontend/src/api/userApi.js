@@ -47,3 +47,10 @@ export const getBlockStatusApi = async (userId) => {
 
     return response.data;
 };
+
+export const getUserById = async (userId) => {
+    const response = await axios.get(`${backendURL}/auth/user/${userId}`, {
+        withCredentials: true,
+    });
+    return response.data.user;
+};
