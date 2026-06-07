@@ -222,7 +222,7 @@ export default function Chat() {
     }
 
     return (
-        <div className="w-full flex flex-col bg-red-500"
+        <div className="w-full flex flex-col bg-slate-50"
     style={{ height: 'var(--app-height)' }}>
 
             {/* Header */}
