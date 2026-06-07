@@ -48,9 +48,7 @@ export default function Messages() {
         longPressTimer.current = setTimeout(() => {
             if (!touchMoved.current) {
                 didLongPress.current = true;
-                setSelectedChat(prev =>
-                    prev === chatId ? null : chatId
-                );
+                setSelectedChat(chatId);
             }
         }, 500);
     };
@@ -83,7 +81,7 @@ export default function Messages() {
     // desktop — right click
     const handleContextMenu = (e, chatId) => {
         e.preventDefault();
-        setSelectedChat(prev => prev === chatId ? null : chatId);
+        setSelectedChat(chatId);    
     };
 
 
