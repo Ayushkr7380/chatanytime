@@ -198,7 +198,7 @@ export default function Chat() {
 
     if (isLoading) {
         return (
-            <div className="w-full h-[100dvh] flex flex-col bg-slate-50">
+            <div className="w-full h-full flex flex-col bg-slate-50">
                 <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div>
