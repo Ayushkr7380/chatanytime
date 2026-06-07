@@ -40,6 +40,19 @@ export default function GroupChat() {
         markRead(chatId);
     }, [chatId]);
 
+    useEffect(() => {
+        const chat = chats?.find(c => c._id === chatId);
+        const hasCleared = chat?.deletedFor?.some(
+            d => d.userId.toString() === meData?.user?._id.toString()
+        );
+
+        if (hasCleared) {
+            queryClient.removeQueries({ queryKey: ["messages", chatId] });
+        } else {
+            queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
+        }
+    }, [chatId]);
+
     // useEffect(() => {
     //     bottomRef.current?.scrollIntoView({ behavior: "instant" });
     // }, [messages, otherTyping]);
@@ -108,6 +121,8 @@ export default function GroupChat() {
             stopTyping(chatId);
         }, 2000);
     };
+
+    
 
     const onSubmit = ({ content }) => {
         sendMessage({ content, chatId });
