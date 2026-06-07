@@ -17,6 +17,7 @@ import Skeleton from "@/components/Skeleton";
 export default function GroupChat() {
 
     const bottomRef = useRef(null);
+    const messagesContainerRef = useRef(null);
     const navigate = useNavigate();
     const { chatId } = useParams();
 
@@ -39,8 +40,15 @@ export default function GroupChat() {
         markRead(chatId);
     }, [chatId]);
 
+    // useEffect(() => {
+    //     bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    // }, [messages, otherTyping]);
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "instant" });
+        const container = messagesContainerRef.current;
+
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
     }, [messages, otherTyping]);
 
     useEffect(() => {
@@ -109,7 +117,7 @@ export default function GroupChat() {
     if (isLoading) {
         return (
             <div className="w-full flex flex-col bg-slate-50"
-     style={{ height: "var(--app-height)" }}>
+                style={{ height: "var(--app-height)" }}>
                 <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div>
@@ -130,9 +138,9 @@ export default function GroupChat() {
 
     return (
         <div
-    className="w-full flex flex-col bg-slate-50"
-    style={{ height: "var(--app-height)" }}
->
+            className="w-full flex flex-col bg-slate-50"
+            style={{ height: "var(--app-height)" }}
+        >
             {/* Header */}
             <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
                 <div className="flex items-center gap-1">
@@ -161,9 +169,10 @@ export default function GroupChat() {
             </div>
 
             {/* Messages */}
-          <div
-    className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto"
->
+            <div
+             ref={messagesContainerRef}
+                className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto"
+            >
                 {messages?.map((msg) => (
                     <MessageBubble
                         key={msg._id}
