@@ -87,3 +87,11 @@ export const renameGroupApi = async ({ chatId, groupName }) => {
 
     return response.data;
 };
+
+export const deleteChatApi = async (chatId) => {
+    const response = await axios.delete(
+        `${backendURL}/user/chat/${chatId}/delete`,
+        { withCredentials: true }
+    );
+    return response.data;
+};

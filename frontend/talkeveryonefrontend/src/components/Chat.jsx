@@ -71,7 +71,21 @@ export default function Chat() {
     };
 
     useEffect(() => {
+        //  queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
         markRead(chatId);
+    }, [chatId]);
+
+    useEffect(() => {
+        const chat = chats?.find(c => c._id === chatId);
+        const hasCleared = chat?.deletedFor?.some(
+            d => d.userId.toString() === meData?.user?._id.toString()
+        );
+
+        if (hasCleared) {
+            queryClient.removeQueries({ queryKey: ["messages", chatId] });
+        } else {
+            queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
+        }
     }, [chatId]);
 
     useEffect(() => {
@@ -79,6 +93,8 @@ export default function Chat() {
     }, [messages, otherTyping]);
 
     useEffect(() => {
+        // queryClient.removeQueries({ queryKey: ["messages", chatId] });
+
         const joinRoom = () => socket.emit("joinChat", chatId);
 
         if (socket.connected) joinRoom();
@@ -94,7 +110,7 @@ export default function Chat() {
         //     }
         //     // queryClient.invalidateQueries({ queryKey: ["chats"] });
         // };
-       
+
         const handleReceiveMessage = (msgData) => {
 
             if (msgData.chatId === chatId) {
@@ -116,8 +132,8 @@ export default function Chat() {
                     }
                 );
 
-                    markRead(chatId);
-                
+                markRead(chatId);
+
             }
             queryClient.invalidateQueries({ queryKey: ["chats"] });
         };

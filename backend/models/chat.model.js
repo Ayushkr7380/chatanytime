@@ -1,29 +1,41 @@
-import {Schema , model} from "mongoose";
+import { Schema, model } from "mongoose";
 
 const chatSchema = new Schema({
-    chatName:{
-        type:String,
-        trim:true,
+    chatName: {
+        type: String,
+        trim: true,
     },
-    isGroupChat:{
-        type:Boolean,
-        default:false
+    isGroupChat: {
+        type: Boolean,
+        default: false
     },
-    users:[{
-        type:Schema.Types.ObjectId,
-        ref:"User"
+    users: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
     }],
-    groupAdmin:{
-        type:Schema.Types.ObjectId,
-        ref:"User",
-        default:null
+    groupAdmin: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null
     },
-    latestMessage:{
-        type:Schema.Types.ObjectId,
-        ref:"Message"
-    }
+    latestMessage: {
+        type: Schema.Types.ObjectId,
+        ref: "Message"
+    },
+
+    deletedFor: [
+        {
+            userId: {
+                type: Schema.Types.ObjectId,
+                ref: "User"
+            },
+            clearedAt: {
+                type: Date,
+            }
+        }
+    ]
 
 },
-{timestamps:true});
+    { timestamps: true });
 
-export const Chat = model("Chat",chatSchema);
+export const Chat = model("Chat", chatSchema);

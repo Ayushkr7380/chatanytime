@@ -325,11 +325,31 @@ export const myAllChats = async (req, res) => {
             });
         }
 
+        
+        const visibleChats = chats.filter(chat => {
+            const entry = chat.deletedFor?.find(
+                d => d.userId.toString() === req.user.id.toString()
+            );
+
+            if (!entry) return true; 
+
+            if (!chat.latestMessage) return false; 
+
+           
+            return chat.latestMessage.createdAt > entry.clearedAt;
+        });
+
         const chatsWithUnread = await Promise.all(
-            chats.map(async (chat) => {
+            visibleChats.map(async (chat) => {
+
+                const entry = chat.deletedFor?.find(
+                    d => d.userId.toString() === req.user.id.toString()
+                );
+
                 const unreadCount = await Message.countDocuments({
                     chat: chat._id,
-                    readBy: { $nin: [req.user.id] }
+                    readBy: { $nin: [req.user.id] },
+                    ...(entry && { createdAt: { $gt: entry.clearedAt } })
                 });
 
                 return {
@@ -344,6 +364,7 @@ export const myAllChats = async (req, res) => {
             message: "All chats fetched successfully.",
             chats: chatsWithUnread,
         });
+
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -356,10 +377,24 @@ export const getMessages = async (req, res) => {
     try {
         const chatId = req.params.chatId;
 
-        console.log(chatId);
+        const chat = await Chat.findById(chatId);
 
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found."
+            });
+        }
 
-        const messages = await Message.find({ chat: chatId })
+       
+        const entry = chat.deletedFor?.find(
+            d => d.userId.toString() === req.user.id.toString()
+        );
+
+        const messages = await Message.find({
+            chat: chatId,
+            ...(entry && { createdAt: { $gt: entry.clearedAt } })
+        })
             .sort({ createdAt: 1 })
             .populate("sender", "email username name")
             .populate({
@@ -375,30 +410,28 @@ export const getMessages = async (req, res) => {
                             path: "sender",
                             select: "name"
                         }
-
                     }
                 ]
             });
-
-
 
         if (!messages) {
             return res.status(400).json({
                 success: false,
                 message: "Failed to fetch the messages."
-            })
+            });
         }
 
         return res.status(201).json({
             success: true,
             message: "Messages fetched successfully.",
             messages
-        })
+        });
+
     } catch (error) {
         return res.status(500).json({
             success: false,
             message: error.message
-        })
+        });
     }
 }
 
@@ -824,6 +857,72 @@ export const renameGroup = async (req, res) => {
             success: true,
             message: "Group renamed successfully.",
             group
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const deleteChat = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const userId = req.user.id;
+
+        const chat = await Chat.findById(chatId);
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found."
+            });
+        }
+
+       
+        const existingIndex = chat.deletedFor.findIndex(
+            d => d.userId.toString() === userId.toString()
+        );
+
+        if (existingIndex !== -1) {
+            chat.deletedFor[existingIndex].clearedAt = new Date();
+        } else {
+            chat.deletedFor.push({
+                userId,
+                clearedAt: new Date()
+            });
+        }
+
+        await chat.save();
+
+        
+        const latestMessage = await Message.findOne({ chat: chatId })
+            .sort({ createdAt: -1 });
+
+        if (latestMessage) {
+            const allDeleted = chat.users.every(user => {
+                const entry = chat.deletedFor.find(
+                    d => d.userId.toString() === user.toString()
+                );
+                if (!entry) return false;
+                return entry.clearedAt > latestMessage.createdAt;
+            });
+
+            if (allDeleted) {
+                await Chat.findByIdAndDelete(chatId);
+                await Message.deleteMany({ chat: chatId });
+                return res.status(200).json({
+                    success: true,
+                    message: "Chat permanently deleted."
+                });
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Chat cleared from your side."
         });
 
     } catch (error) {

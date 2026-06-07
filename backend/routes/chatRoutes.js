@@ -11,7 +11,8 @@ import {
     addMember,
     removeMember,
     makeAdmin,
-    renameGroup
+    renameGroup,
+    deleteChat
 } from "../controllers/chat.controllers.js";
 
 const router = Router();
@@ -22,6 +23,7 @@ router.post("/chat/:id",isLoggedIn,privateChat);
 router.post("/message",isLoggedIn,sendMessages);
 
 router.get("/all-chats",isLoggedIn,myAllChats);
+router.delete("/chat/:chatId/delete", isLoggedIn, deleteChat);
 
 router.get("/message/:chatId",isLoggedIn,getMessages);
 router.put("/message/read/:chatId", isLoggedIn, markMessagesRead);
