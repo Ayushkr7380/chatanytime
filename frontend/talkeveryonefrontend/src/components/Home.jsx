@@ -16,13 +16,13 @@ function Home() {
     const { data, isLoading } = useMe();
 
     useEffect(() => {
-    if (data?.user && !socket.connected) {
-        connectSocket({
-            userId: data.user._id,
-            name: data.user.name,
-        });
-    }
-}, [data]);
+        if (data?.user && !socket.connected) {
+            connectSocket({
+                userId: data.user._id,
+                name: data.user.name,
+            });
+        }
+    }, [data]);
 
     if (isLoading) {
         return (
@@ -81,7 +81,10 @@ function Home() {
         location.pathname.startsWith("/group/") || location.pathname.startsWith("/new-chat/");
 
     return (
-        <div className="flex  bg-slate-50 " style={{ height: 'var(--app-height)' }}>
+        <div
+            className="flex bg-slate-50 overflow-hidden"
+            style={{ height: "var(--app-height)" }}
+        >
 
             {/* Sidebar */}
             <aside
@@ -115,7 +118,7 @@ function Home() {
                 </div>
 
                 {/* Chat List - scroll */}
-                <div className="flex-1" style={{ overflowY: "auto" }}>
+                <div className="flex-1 min-h-0 overflow-y-auto">
                     <Messages />
                 </div>
 
@@ -133,6 +136,7 @@ function Home() {
                     flex-1
                     bg-slate-50
                     h-full
+                     min-h-0
                 `}
             >
                 <Outlet />

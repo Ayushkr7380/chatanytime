@@ -7,22 +7,38 @@ function App() {
 
   useEffect(() => {
     const setAppHeight = () => {
+      const height =
+        window.visualViewport?.height || window.innerHeight;
+
       document.documentElement.style.setProperty(
-        '--app-height',
-        `${window.innerHeight}px`
+        "--app-height",
+        `${height}px`
       );
     };
-    window.addEventListener('resize', setAppHeight);
+
     setAppHeight();
-    return () => window.removeEventListener('resize', setAppHeight);
+
+    window.addEventListener("resize", setAppHeight);
+    window.visualViewport?.addEventListener(
+      "resize",
+      setAppHeight
+    );
+
+    return () => {
+      window.removeEventListener("resize", setAppHeight);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        setAppHeight
+      );
+    };
   }, []);
- 
+
   return (
     <>
-      <CustomRoutes/>
+      <CustomRoutes />
       <Toaster position="top-center" />
     </>
-      
+
   )
 }
 

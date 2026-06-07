@@ -198,7 +198,8 @@ export default function Chat() {
 
     if (isLoading) {
         return (
-            <div className="w-full h-full flex flex-col bg-slate-50">
+          <div className="w-full flex flex-col bg-slate-50"
+     style={{ height: "var(--app-height)" }}>
                 <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div>
@@ -291,9 +292,8 @@ export default function Chat() {
 
             {/* Messages */}
             <div
-                className="flex-1 p-4 bg-slate-50 no-scrollbar"
-                style={{ overflowY: "auto" }}
-            >
+    className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto"
+>
                 {messages?.map((msg) => (
                     <MessageBubble
                         key={msg._id}
