@@ -28,6 +28,7 @@ export default function Messages() {
     const [selectedChat, setSelectedChat] = useState(null);
     const longPressTimer = useRef(null);
     const didLongPress = useRef(false);
+    const touchMoved = useRef(false);
 
     const { mutate: deleteChat } = useMutation({
         mutationFn: deleteChatApi,
@@ -38,16 +39,44 @@ export default function Messages() {
         }
     });
 
-    // mobile — long press
+    // const touchMoved = useRef(false);
+
     const handleLongPressStart = (chatId) => {
+        touchMoved.current = false;
         didLongPress.current = false;
+
         longPressTimer.current = setTimeout(() => {
-            didLongPress.current = true;
-            setSelectedChat(prev => prev === chatId ? null : chatId);
+            if (!touchMoved.current) {
+                didLongPress.current = true;
+                setSelectedChat(prev =>
+                    prev === chatId ? null : chatId
+                );
+            }
         }, 500);
     };
 
     const handleLongPressEnd = () => {
+        clearTimeout(longPressTimer.current);
+
+        setTimeout(() => {
+            didLongPress.current = false;
+        }, 50);
+    };
+
+    const handleItemClick = (e) => {
+        if (didLongPress.current) {
+            e.preventDefault();
+            didLongPress.current = false;
+            return;
+        }
+
+        if (selectedChat) {
+            e.preventDefault();
+        }
+    };
+
+    const handleTouchMove = () => {
+        touchMoved.current = true;
         clearTimeout(longPressTimer.current);
     };
 
@@ -57,17 +86,7 @@ export default function Messages() {
         setSelectedChat(prev => prev === chatId ? null : chatId);
     };
 
-    // navigate rokna jab long press ya select mode ho
-    const handleItemClick = (e) => {
-        if (didLongPress.current) {
-            e.preventDefault();
-            didLongPress.current = false;
-            return;
-        }
-        if (selectedChat) {
-            e.preventDefault();
-        }
-    };
+
 
     if (isLoading) {
         return (
@@ -151,11 +170,15 @@ export default function Messages() {
                             key={chat._id}
                             // mobile
                             onTouchStart={() => handleLongPressStart(chat._id)}
+                            onTouchMove={handleTouchMove}
                             onTouchEnd={handleLongPressEnd}
-                            // desktop
+
+                            // desktop left hold
                             onMouseDown={() => handleLongPressStart(chat._id)}
                             onMouseUp={handleLongPressEnd}
                             onMouseLeave={handleLongPressEnd}
+
+                            // desktop right click
                             onContextMenu={(e) => handleContextMenu(e, chat._id)}
                             variant="outline"
                             asChild
