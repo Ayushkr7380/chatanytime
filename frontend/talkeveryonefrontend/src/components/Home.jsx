@@ -81,7 +81,7 @@ function Home() {
         location.pathname.startsWith("/group/") || location.pathname.startsWith("/new-chat/");
 
     return (
-        <div className="flex h-[100dvh] bg-slate-50">
+        <div className="flex  bg-slate-50 " style={{ height: 'var(--app-height)' }}>
 
             {/* Sidebar */}
             <aside
@@ -94,7 +94,7 @@ function Home() {
                     border-r
                     border-slate-200
                     flex-col
-                    h-[100dvh]
+                    h-full
                 `}
             >
 
@@ -132,7 +132,7 @@ function Home() {
                     ${isChatPage ? "flex" : "hidden md:flex"}
                     flex-1
                     bg-slate-50
-                    h-[100dvh]
+                    h-full
                 `}
             >
                 <Outlet />
