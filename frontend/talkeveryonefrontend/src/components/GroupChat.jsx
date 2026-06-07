@@ -13,6 +13,7 @@ import { useMarkRead } from "@/hooks/useMarkRead";
 import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext";
 import { TypingBubble } from "./TypingBubble";
 import Skeleton from "@/components/Skeleton";
+import { useChats } from "@/hooks/useChats";
 
 export default function GroupChat() {
 
@@ -23,6 +24,7 @@ export default function GroupChat() {
 
     const { data: meData } = useMe();
     const queryClient = useQueryClient();
+    const { data: chats = [] } = useChats();
 
     const { data: messages = [], isLoading } = useMessages(chatId);
     const { mutate: sendMessage } = useSendMessage();

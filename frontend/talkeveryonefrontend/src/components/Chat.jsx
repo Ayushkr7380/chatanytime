@@ -44,6 +44,7 @@ export default function Chat() {
     const { data: blockStatus } = useBlockStatus(otherUserId);
     const { mutate: unblockUser } = useUnblockUser();
     const { data: statusData } = useUserStatus(otherUserId);
+    
 
     const formatLastSeen = (lastSeen) => {
         if (!lastSeen) return "";
@@ -87,7 +88,7 @@ export default function Chat() {
         } else {
             queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
         }
-    }, [chatId]);
+    }, [chatId, chats, meData?.user?._id]);
 
     // useEffect(() => {
     //     bottomRef.current?.scrollIntoView({ behavior: "instant" });
