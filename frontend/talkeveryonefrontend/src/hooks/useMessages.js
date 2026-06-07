@@ -5,6 +5,6 @@ export const useMessages = (chatId) => {
   return useQuery({
     queryKey: ["messages", chatId],
     queryFn: () => getMessages(chatId),
-    staleTime: Infinity,
+    // staleTime: Infinity,
   });
 };

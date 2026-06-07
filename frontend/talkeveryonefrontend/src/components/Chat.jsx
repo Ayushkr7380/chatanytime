@@ -80,7 +80,7 @@ export default function Chat() {
     useEffect(() => {
         const chat = chats?.find(c => c._id === chatId);
         const hasCleared = chat?.deletedFor?.some(
-            d => d.userId.toString() === meData?.user?._id.toString()
+            d => d.userId.toString() === meData?.user?._id.toString() && !d.isCleared
         );
 
         if (hasCleared) {

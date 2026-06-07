@@ -14,8 +14,9 @@ import Skeleton from "@/components/Skeleton";
 import { FaUsers } from "react-icons/fa";
 import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteChatApi } from "@/api/chatApi";
+import { deleteChatApi, clearChatApi } from "@/api/chatApi";
 import { MdDelete } from "react-icons/md";
+import { BsThreeDotsVertical } from "react-icons/bs";
 
 export default function Messages() {
 
@@ -26,25 +27,37 @@ export default function Messages() {
     const { data: chats, isLoading, isError } = useChats();
 
     const [selectedChat, setSelectedChat] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
     const longPressTimer = useRef(null);
     const didLongPress = useRef(false);
     const touchMoved = useRef(false);
 
-    const { mutate: deleteChat } = useMutation({
+    // selected chat ka object
+    const selectedChatObj = chats?.find(c => c._id === selectedChat);
+
+    const { mutate: deleteChat, isPending: isDeleting } = useMutation({
         mutationFn: deleteChatApi,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["chats"] });
             setSelectedChat(null);
+            setModalOpen(false);
             navigate("/");
         }
     });
 
-    // const touchMoved = useRef(false);
+    const { mutate: clearChat, isPending: isClearing } = useMutation({
+        mutationFn: clearChatApi,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
+            queryClient.removeQueries({ queryKey: ["messages", selectedChat] });
+            setSelectedChat(null);
+            setModalOpen(false);
+        }
+    });
 
     const handleLongPressStart = (chatId) => {
         touchMoved.current = false;
         didLongPress.current = false;
-
         longPressTimer.current = setTimeout(() => {
             if (!touchMoved.current) {
                 didLongPress.current = true;
@@ -55,10 +68,19 @@ export default function Messages() {
 
     const handleLongPressEnd = () => {
         clearTimeout(longPressTimer.current);
-
         setTimeout(() => {
             didLongPress.current = false;
         }, 50);
+    };
+
+    const handleTouchMove = () => {
+        touchMoved.current = true;
+        clearTimeout(longPressTimer.current);
+    };
+
+    const handleContextMenu = (e, chatId) => {
+        e.preventDefault();
+        setSelectedChat(chatId);
     };
 
     const handleItemClick = (e) => {
@@ -67,24 +89,15 @@ export default function Messages() {
             didLongPress.current = false;
             return;
         }
-
         if (selectedChat) {
             e.preventDefault();
         }
     };
 
-    const handleTouchMove = () => {
-        touchMoved.current = true;
-        clearTimeout(longPressTimer.current);
+    const handleCancel = () => {
+        setSelectedChat(null);
+        setModalOpen(false);
     };
-
-    // desktop — right click
-    const handleContextMenu = (e, chatId) => {
-        e.preventDefault();
-        setSelectedChat(chatId);    
-    };
-
-
 
     if (isLoading) {
         return (
@@ -133,27 +146,85 @@ export default function Messages() {
         return date.toLocaleDateString([], { day: "numeric", month: "short" });
     };
 
+
+    const getLatestMessageText = (chat) => {
+        const entry = chat.deletedFor?.find(
+            d => d.userId === meData?.user?._id
+        );
+
+        if (entry?.isCleared && chat.latestMessage) {
+            const msgTime = new Date(chat.latestMessage.createdAt);
+            const clearedTime = new Date(entry.clearedAt);
+            if (msgTime <= clearedTime) {
+                return chat.isGroupChat ? "Group created" : "Start chatting...";
+            }
+        }
+
+        return chat.latestMessage?.content ||
+            (chat.isGroupChat ? "Group created" : "Start chatting...");
+    };
     return (
         <div className="p-2">
 
-            {/* select mode mein delete header */}
+
             {selectedChat && (
-                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-red-50 rounded-xl border border-red-200">
-                    <p className="text-sm text-red-500 font-medium">1 selected</p>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => deleteChat(selectedChat)}
-                            className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200"
-                        >
-                            <MdDelete size={20} />
-                        </button>
-                        <button
-                            onClick={() => setSelectedChat(null)}
-                            className="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm"
-                        >
-                            Cancel
-                        </button>
-                    </div>
+                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-slate-50 rounded-xl border border-slate-200">
+                    <p className="text-sm text-slate-600 font-medium">1 selected</p>
+
+                    {isDeleting || isClearing ? (
+                        // loading state — sirf spinner dikhao
+                        <div className="flex items-center gap-2 px-2">
+                            <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs text-slate-500">Please wait...</span>
+                        </div>
+                    ) : (
+                        // normal state
+                        <div className="flex gap-2 items-center">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setModalOpen(prev => !prev)}
+                                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                >
+                                    <BsThreeDotsVertical size={18} />
+                                </button>
+
+                                {modalOpen && (
+                                    <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border border-slate-100 w-36 z-50 overflow-hidden">
+                                        <button
+                                            onClick={() => clearChat(selectedChat)}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Clear Chat
+                                        </button>
+                                        {!selectedChatObj?.isGroupChat && (
+                                            <button
+                                                onClick={() => deleteChat(selectedChat)}
+                                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                                            >
+                                                Delete Chat
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {!selectedChatObj?.isGroupChat && (
+                                <button
+                                    onClick={() => deleteChat(selectedChat)}
+                                    className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200"
+                                >
+                                    <MdDelete size={20} />
+                                </button>
+                            )}
+
+                            <button
+                                onClick={handleCancel}
+                                className="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -166,17 +237,12 @@ export default function Messages() {
                     return (
                         <Item
                             key={chat._id}
-                            // mobile
                             onTouchStart={() => handleLongPressStart(chat._id)}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleLongPressEnd}
-
-                            // desktop left hold
                             onMouseDown={() => handleLongPressStart(chat._id)}
                             onMouseUp={handleLongPressEnd}
                             onMouseLeave={handleLongPressEnd}
-
-                            // desktop right click
                             onContextMenu={(e) => handleContextMenu(e, chat._id)}
                             variant="outline"
                             asChild
@@ -184,13 +250,10 @@ export default function Messages() {
                             className={`
                                 border-0 rounded-2xl transition-all duration-200 px-2 py-1
                                 ${isActive ? "bg-violet-100" : "hover:bg-violet-50"}
-                                ${selectedChat === chat._id ? "bg-red-50 border border-red-200" : ""}
+                                ${selectedChat === chat._id ? "bg-violet-50 border border-violet-200" : ""}
                             `}
                         >
-                            <Link
-                                to={chatPath}
-                                onClick={handleItemClick}
-                            >
+                            <Link to={chatPath} onClick={handleItemClick}>
                                 <ItemMedia variant="image">
                                     {chat.isGroupChat ? (
                                         <div className="h-12 w-12 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center">
@@ -224,7 +287,7 @@ export default function Messages() {
                                         </div>
                                     </div>
                                     <ItemDescription className="text-sm text-slate-500 truncate mt-1">
-                                        {chat.latestMessage?.content || (chat.isGroupChat ? "Group created" : "Start chatting...")}
+                                        {getLatestMessageText(chat)}
                                     </ItemDescription>
                                 </ItemContent>
                             </Link>

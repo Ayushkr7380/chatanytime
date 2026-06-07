@@ -31,7 +31,8 @@ const chatSchema = new Schema({
             },
             clearedAt: {
                 type: Date,
-            }
+            },
+            isCleared: { type: Boolean, default: false }
         }
     ]
 

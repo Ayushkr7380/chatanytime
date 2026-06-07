@@ -312,6 +312,7 @@ export const sendMessages = async (req, res) => {
         });
     }
 };
+
 export const myAllChats = async (req, res) => {
     try {
         const chats = await Chat.find({
@@ -335,6 +336,8 @@ export const myAllChats = async (req, res) => {
             );
 
             if (!entry) return true; 
+
+            if (entry.isCleared) return true;
 
             if (!chat.latestMessage) return false; 
 
@@ -926,6 +929,50 @@ export const deleteChat = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Chat cleared from your side."
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const clearChat = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const userId = req.user.id;
+
+        const chat = await Chat.findById(chatId);
+
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found."
+            });
+        }
+
+        const existingIndex = chat.deletedFor.findIndex(
+            d => d.userId.toString() === userId.toString()
+        );
+
+        if (existingIndex !== -1) {
+            chat.deletedFor[existingIndex].clearedAt = new Date();
+            chat.deletedFor[existingIndex].isCleared = true;
+        } else {
+            chat.deletedFor.push({
+                userId,
+                clearedAt: new Date(),
+                isCleared: true
+            });
+        }
+
+        await chat.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Chat cleared."
         });
 
     } catch (error) {

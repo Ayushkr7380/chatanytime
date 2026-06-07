@@ -95,3 +95,12 @@ export const deleteChatApi = async (chatId) => {
     );
     return response.data;
 };
+
+export const clearChatApi = async (chatId) => {
+    const response = await axios.put(
+        `${backendURL}/user/chat/${chatId}/clear`,
+        {},
+        { withCredentials: true }
+    );
+    return response.data;
+};

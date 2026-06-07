@@ -26,6 +26,10 @@ export default function GroupChat() {
     const queryClient = useQueryClient();
     const { data: chats = [] } = useChats();
 
+    const currentChat = chats.find(c => c._id === chatId);
+    const groupName = currentChat?.chatName;           // ← useChats se
+    const membersCount = currentChat?.users?.length;   // ← useChats se
+
     const { data: messages = [], isLoading } = useMessages(chatId);
     const { mutate: sendMessage } = useSendMessage();
     const { mutate: markRead } = useMarkRead();
@@ -35,8 +39,9 @@ export default function GroupChat() {
     const [typerName, setTyperName] = useState("");
     const typingTimeoutRef = useRef(null);
 
-    const groupName = messages?.[0]?.chat?.chatName;
-    const membersCount = messages?.[0]?.chat?.users?.length;
+    // purana wala hata diya:
+    // const groupName = messages?.[0]?.chat?.chatName;
+    // const membersCount = messages?.[0]?.chat?.users?.length;
 
     useEffect(() => {
         markRead(chatId);
@@ -44,23 +49,22 @@ export default function GroupChat() {
 
     useEffect(() => {
         const chat = chats?.find(c => c._id === chatId);
-        const hasCleared = chat?.deletedFor?.some(
+        const entry = chat?.deletedFor?.find(
             d => d.userId.toString() === meData?.user?._id.toString()
         );
 
-        if (hasCleared) {
+        const hasDeleted = entry && !entry.isCleared;
+        
+
+        if (hasDeleted) {
             queryClient.removeQueries({ queryKey: ["messages", chatId] });
         } else {
             queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
         }
     }, [chatId]);
 
-    // useEffect(() => {
-    //     bottomRef.current?.scrollIntoView({ behavior: "instant" });
-    // }, [messages, otherTyping]);
     useEffect(() => {
         const container = messagesContainerRef.current;
-
         if (container) {
             container.scrollTop = container.scrollHeight;
         }
@@ -124,8 +128,6 @@ export default function GroupChat() {
         }, 2000);
     };
 
-    
-
     const onSubmit = ({ content }) => {
         sendMessage({ content, chatId });
         reset();
@@ -133,8 +135,7 @@ export default function GroupChat() {
 
     if (isLoading) {
         return (
-            <div className="w-full flex flex-col bg-slate-50"
-                style={{ height: "var(--app-height)" }}>
+            <div className="w-full flex flex-col bg-slate-50" style={{ height: "var(--app-height)" }}>
                 <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div>
@@ -154,10 +155,8 @@ export default function GroupChat() {
     }
 
     return (
-        <div
-            className="w-full flex flex-col bg-slate-50"
-            style={{ height: "var(--app-height)" }}
-        >
+        <div className="w-full flex flex-col bg-slate-50" style={{ height: "var(--app-height)" }}>
+
             {/* Header */}
             <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
                 <div className="flex items-center gap-1">
@@ -187,7 +186,7 @@ export default function GroupChat() {
 
             {/* Messages */}
             <div
-             ref={messagesContainerRef}
+                ref={messagesContainerRef}
                 className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto"
             >
                 {messages?.map((msg) => (
@@ -230,7 +229,6 @@ export default function GroupChat() {
                     </button>
                 </form>
             </div>
-
         </div>
     );
 }
