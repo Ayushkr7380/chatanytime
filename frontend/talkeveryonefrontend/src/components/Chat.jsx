@@ -221,7 +221,7 @@ export default function Chat() {
     }
 
     return (
-        <div className="w-full h-[100dvh] flex flex-col bg-slate-50">
+        <div className="w-full flex flex-col bg-slate-50" style={{ height: '100dvh' }}>
 
             {/* Header */}
             <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
