@@ -34,7 +34,7 @@ export default function NewChat() {
     };
 
     return (
-        <div className="w-full flex flex-col bg-slate-50" style={{ height: '100dvh' }}>
+        <div className="w-full flex flex-col bg-slate-50" style={{ height: '100svh' }}>
 
             {/* Header — Chat.jsx jaisa */}
             <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
