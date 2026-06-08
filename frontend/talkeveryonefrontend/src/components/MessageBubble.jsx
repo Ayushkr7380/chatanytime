@@ -42,7 +42,7 @@ export const MessageBubble = ({
 
     const handleLongPressEnd = () => {
         clearTimeout(longPressTimer.current);
-        setTimeout(() => { didLongPress.current = false; }, 50);
+        
     };
 
     const handleTouchMove = () => {
