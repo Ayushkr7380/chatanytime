@@ -17,7 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChatApi, clearChatApi } from "@/api/chatApi";
 import { MdDelete } from "react-icons/md";
 import { BsThreeDotsVertical } from "react-icons/bs";
-    
+
 export default function Messages() {
 
     const location = useLocation();
@@ -32,7 +32,7 @@ export default function Messages() {
     const didLongPress = useRef(false);
     const touchMoved = useRef(false);
 
-    
+
     const selectedChatObj = chats?.find(c => c._id === selectedChat);
 
     const { mutate: deleteChat, isPending: isDeleting } = useMutation({
@@ -55,9 +55,10 @@ export default function Messages() {
         }
     });
 
-    const handleLongPressStart = (chatId) => {
+    const handlePointerDown = (chatId) => {
         touchMoved.current = false;
         didLongPress.current = false;
+
         longPressTimer.current = setTimeout(() => {
             if (!touchMoved.current) {
                 didLongPress.current = true;
@@ -66,16 +67,30 @@ export default function Messages() {
         }, 500);
     };
 
-    const handleLongPressEnd = () => {
-        clearTimeout(longPressTimer.current);
-        setTimeout(() => {
-            didLongPress.current = false;
-        }, 50);
-    };
-
-    const handleTouchMove = () => {
+    const handlePointerMove = () => {
         touchMoved.current = true;
         clearTimeout(longPressTimer.current);
+    };
+
+    const handlePointerUp = () => {
+        clearTimeout(longPressTimer.current);
+    };
+
+    const handleItemClick = (e) => {
+        if (didLongPress.current) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            setTimeout(() => {
+                didLongPress.current = false;
+            }, 100);
+
+            return;
+        }
+
+        if (selectedChat) {
+            e.preventDefault();
+        }
     };
 
     const handleContextMenu = (e, chatId) => {
@@ -83,16 +98,6 @@ export default function Messages() {
         setSelectedChat(chatId);
     };
 
-    const handleItemClick = (e) => {
-        if (didLongPress.current) {
-            e.preventDefault();
-            didLongPress.current = false;
-            return;
-        }
-        if (selectedChat) {
-            e.preventDefault();
-        }
-    };
 
     const handleCancel = () => {
         setSelectedChat(null);
@@ -172,13 +177,13 @@ export default function Messages() {
                     <p className="text-sm text-slate-600 font-medium">1 selected</p>
 
                     {isDeleting || isClearing ? (
-                        
+
                         <div className="flex items-center gap-2 px-2">
                             <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                             <span className="text-xs text-slate-500">Please wait...</span>
                         </div>
                     ) : (
-                        
+
                         <div className="flex gap-2 items-center">
                             <div className="relative">
                                 <button
@@ -237,12 +242,9 @@ export default function Messages() {
                     return (
                         <Item
                             key={chat._id}
-                            onTouchStart={() => handleLongPressStart(chat._id)}
-                            onTouchMove={handleTouchMove}
-                            onTouchEnd={handleLongPressEnd}
-                            onMouseDown={() => handleLongPressStart(chat._id)}
-                            onMouseUp={handleLongPressEnd}
-                            onMouseLeave={handleLongPressEnd}
+                            onPointerDown={() => handlePointerDown(chat._id)}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
                             onContextMenu={(e) => handleContextMenu(e, chat._id)}
                             variant="outline"
                             asChild
