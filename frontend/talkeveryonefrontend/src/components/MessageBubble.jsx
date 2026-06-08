@@ -29,9 +29,10 @@ export const MessageBubble = ({
         );
     }
 
-    const handleLongPressStart = () => {
+    const handlePointerDown = () => {
         touchMoved.current = false;
         didLongPress.current = false;
+
         longPressTimer.current = setTimeout(() => {
             if (!touchMoved.current) {
                 didLongPress.current = true;
@@ -40,14 +41,30 @@ export const MessageBubble = ({
         }, 500);
     };
 
-    const handleLongPressEnd = () => {
-        clearTimeout(longPressTimer.current);
-        
-    };
-
-    const handleTouchMove = () => {
+    const handlePointerMove = () => {
         touchMoved.current = true;
         clearTimeout(longPressTimer.current);
+    };
+
+    const handlePointerUp = () => {
+        clearTimeout(longPressTimer.current);
+    };
+
+    const handleClick = (e) => {
+        if (didLongPress.current) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            setTimeout(() => {
+                didLongPress.current = false;
+            }, 100);
+
+            return;
+        }
+
+        if (isSelected) {
+            onSelect?.(messageId);
+        }
     };
 
     const handleContextMenu = (e) => {
@@ -55,24 +72,15 @@ export const MessageBubble = ({
         onSelect?.(messageId);
     };
 
-    const handleClick = () => {
-        if (didLongPress.current) return;
-        if (isSelected) onSelect?.(messageId);
-    };
-
     return (
         <div
             className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}
-            onTouchStart={handleLongPressStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleLongPressEnd}
-            onMouseDown={handleLongPressStart}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
             onContextMenu={handleContextMenu}
             onClick={handleClick}
         >
-            {/* select indicator — left side */}
             {isSelected && (
                 <div className="flex items-center mr-2">
                     <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center">
@@ -104,9 +112,15 @@ export const MessageBubble = ({
 
                 <div className="flex items-center justify-end gap-1">
                     {isEdited && !isDeleted && (
-                        <p className="text-[10px] opacity-50">edited</p>
+                        <p className="text-[10px] opacity-50">
+                            edited
+                        </p>
                     )}
-                    <p className="text-[10px] opacity-60">{time}</p>
+
+                    <p className="text-[10px] opacity-60">
+                        {time}
+                    </p>
+
                     {isSender && (
                         isRead
                             ? <BsCheckAll className="text-[14px] text-blue-300" />
