@@ -17,7 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChatApi, clearChatApi } from "@/api/chatApi";
 import { MdDelete } from "react-icons/md";
 import { BsThreeDotsVertical } from "react-icons/bs";
-
+    
 export default function Messages() {
 
     const location = useLocation();
@@ -32,7 +32,7 @@ export default function Messages() {
     const didLongPress = useRef(false);
     const touchMoved = useRef(false);
 
-    // selected chat ka object
+    
     const selectedChatObj = chats?.find(c => c._id === selectedChat);
 
     const { mutate: deleteChat, isPending: isDeleting } = useMutation({
@@ -172,13 +172,13 @@ export default function Messages() {
                     <p className="text-sm text-slate-600 font-medium">1 selected</p>
 
                     {isDeleting || isClearing ? (
-                        // loading state — sirf spinner dikhao
+                        
                         <div className="flex items-center gap-2 px-2">
                             <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                             <span className="text-xs text-slate-500">Please wait...</span>
                         </div>
                     ) : (
-                        // normal state
+                        
                         <div className="flex gap-2 items-center">
                             <div className="relative">
                                 <button

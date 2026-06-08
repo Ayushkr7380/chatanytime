@@ -22,6 +22,18 @@ const messageSchema = new Schema({
         type: String,
         enum: ["user", "system"],
         default: "user"
+    },
+    deletedFor: [{
+        type: Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    isEdited: {
+        type: Boolean,
+        default: false
     }
 
 

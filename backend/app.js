@@ -65,34 +65,6 @@ io.on("connection", async (socket) => {
         console.log("Room joined:", chatId);
     });
 
-
-    // socket.on("sendMessage", async (msgInfo) => {
-    //     console.log("Message received from frontend:", msgInfo);
-
-
-    //     const chat = await Chat.findById(msgInfo.chatId).select("users");
-
-
-    //     chat.users.forEach((user) => {
-    //         io.to(user._id.toString()).emit("newMessageNotification", {
-    //             chatId: msgInfo.chatId,
-    //         });
-    //     });
-
-
-    //     io.to(msgInfo.chatId).emit("receiveMessage", {
-    //         _id: Date.now(),
-    //         content: msgInfo.content,
-    //         chatId: msgInfo.chatId,
-    //         sender: {
-    //             _id: userId,
-    //         },
-    //         createdAt: new Date(),
-    //     });
-
-
-    // });
-
     socket.on("disconnect", async () => {
         if (userId) {
             await User.findByIdAndUpdate(userId, {

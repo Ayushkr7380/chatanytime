@@ -17,29 +17,34 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { FaPlus } from "react-icons/fa";
 import { useSearch } from "@/hooks/useSearch";
-import { useCreateChat } from "@/hooks/useCreateChat";
 import { useNavigate } from "react-router-dom";
+import { useChats } from "@/hooks/useChats";
+
 
 export const SearchUser = () => {
     const navigate = useNavigate();
-
     const [open, setOpen] = useState(false);
-
     const [keyword, setKeyword] = useState("");
     const [debouncedKeyword, setDebouncedKeyword] = useState("");
-
-    const { mutate: createChat } = useCreateChat();
+    const { data: chats = [] } = useChats();
 
     const handleCreateChat = (userId) => {
-        navigate(`/new-chat/${userId}`);
+        const existingChat = chats.find(chat =>
+            !chat.isGroupChat &&
+            chat.users.some(u => u._id === userId)
+        );
+
+        if (existingChat) {
+            navigate(`/chat/${existingChat._id}`);
+        } else {
+            navigate(`/new-chat/${userId}`);
+        }
         setOpen(false);
     };
 
     const handleChange = (e) => {
         setKeyword(e.target.value);
-
         clearTimeout(window._searchTimer);
-
         window._searchTimer = setTimeout(() => {
             setDebouncedKeyword(e.target.value);
         }, 500);
@@ -61,7 +66,6 @@ export const SearchUser = () => {
                         <Label className="m-2">
                             Search and start a new chat
                         </Label>
-
                         <input
                             value={keyword}
                             onChange={handleChange}
@@ -72,9 +76,7 @@ export const SearchUser = () => {
                 </FieldGroup>
 
                 {isLoading && (
-                    <p className="text-center text-sm">
-                        Searching...
-                    </p>
+                    <p className="text-center text-sm">Searching...</p>
                 )}
 
                 <div className="flex w-full max-w-md flex-col max-h-62.5 overflow-y-auto">
@@ -96,7 +98,6 @@ export const SearchUser = () => {
                                         className="object-cover rounded-full grayscale"
                                     />
                                 </ItemMedia>
-
                                 <ItemContent>
                                     <ItemTitle className="line-clamp-1">
                                         {user.name}

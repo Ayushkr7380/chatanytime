@@ -14,24 +14,11 @@ router.get("/searchUser",isLoggedIn,searchUser);
 router.get('/me',isLoggedIn,getUserData);
 
 router.get("/status/:userId", isLoggedIn, getUserStatus);
-router.put(
-    "/block/:userId",
-    isLoggedIn,
-    blockUser
-);
+router.put( "/block/:userId",isLoggedIn,blockUser);
 
-router.put(
-    "/unblock/:userId",
-    isLoggedIn,
-    unblockUser
-);
+router.put("/unblock/:userId",isLoggedIn,unblockUser);
 
-router.get(
-    "/block-status/:userId",
-    isLoggedIn,
-    getBlockStatus
-);
-
+router.get("/block-status/:userId",isLoggedIn,getBlockStatus);
 router.get("/user/:userId", isLoggedIn, getUserById);
 
 export default router;

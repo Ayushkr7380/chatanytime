@@ -17,3 +17,28 @@ export const sendMessageApi = async ({ content, chatId ,receiverId }) => {
   );
   return response.data;
 };
+
+export const deleteMessageForMeApi = async (messageId) => {
+    const response = await axios.delete(
+        `${backendURL}/user/message/${messageId}/delete-for-me`,
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const deleteMessageForEveryoneApi = async (messageId) => {
+    const response = await axios.delete(
+        `${backendURL}/user/message/${messageId}/delete-for-everyone`,
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const editMessageApi = async ({ messageId, content }) => {
+    const response = await axios.put(
+        `${backendURL}/user/message/${messageId}/edit`,
+        { content },
+        { withCredentials: true }
+    );
+    return response.data;
+};

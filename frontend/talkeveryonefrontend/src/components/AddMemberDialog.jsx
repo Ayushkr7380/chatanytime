@@ -1,7 +1,5 @@
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
-
 import {
     Dialog,
     DialogContent,
@@ -9,90 +7,38 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { Input } from "@/components/ui/input";
-
 import { useSearch } from "@/hooks/useSearch";
 import { useAddMember } from "@/hooks/useAddMember";
 import { useMe } from "@/hooks/useMe";
 import { useChats } from "@/hooks/useChats";
 
-export default function AddMemberDialog({
-    chatId,
-}) {
+export default function AddMemberDialog({chatId}) {
 
     const [open, setOpen] = useState(false);
-
-    const [keyword, setKeyword] =
-        useState("");
-
-    const [
-        debouncedKeyword,
-        setDebouncedKeyword,
-    ] = useState("");
-
-    const { data: users = [] } =
-        useSearch(debouncedKeyword);
-
-    const { data: meData } =
-        useMe();
-
-    const { data: chats = [] } =
-        useChats();
-
-    const group = chats.find(
-        (chat) => chat._id === chatId
-    );
-
-    const {
-        mutate: addMember,
-    } = useAddMember();
-
+    const [keyword, setKeyword] = useState("");
+    const [debouncedKeyword,setDebouncedKeyword] = useState("");
+    const { data: users = [] } = useSearch(debouncedKeyword);
+    const { data: meData } =  useMe();
+    const { data: chats = [] } = useChats();
+    const group = chats.find((chat) => chat._id === chatId);
+    const {mutate: addMember} = useAddMember();
     const handleSearch = (e) => {
-
         setKeyword(e.target.value);
-
-        clearTimeout(
-            window.groupSearch
-        );
-
-        window.groupSearch =
-            setTimeout(() => {
-
-                setDebouncedKeyword(
-                    e.target.value
-                );
-
+        clearTimeout(window.groupSearch);
+        window.groupSearch =setTimeout(() => {
+                setDebouncedKeyword(e.target.value)
             }, 500);
-    };
-
-    const handleAddMember =
-        (userId) => {
-
-            addMember(
-                {
-                    chatId,
-                    userId,
-                },
-                {
+        };
+    const handleAddMember =(userId) => {
+            addMember({chatId,userId},{
                     onSuccess: () => {
                         setOpen(false);
                     },
                 }
             );
         };
-
-    const availableUsers =
-        users.filter(
-            (user) =>
-                user._id !==
-                    meData?.user?._id &&
-                !group?.users?.some(
-                    (member) =>
-                        member._id ===
-                        user._id
-                )
-        );
+    const availableUsers =users.filter((user) =>user._id !== meData?.user?._id && !group?.users?.some((member) => member._id === user._id));
 
     return (
         <Dialog

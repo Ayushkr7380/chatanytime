@@ -1,4 +1,3 @@
-// import { useMemo } from "react";
 import {io} from "socket.io-client";
 
 const BackendURL = import.meta.env.VITE_BACKEND_URL;

@@ -38,19 +38,12 @@ export const privateChat = async (req, res) => {
         }
 
 
-
-
-
-        //prevent self chat
-
         if (id.toString() === othersId.toString()) {
             return res.status(400).json({
                 success: false,
                 message: "You cannot chat with yourself."
             })
         }
-
-        //check other user exists in DB 
 
         const otherUser = await User.findById(othersId).select("name -_id");
 
@@ -63,7 +56,6 @@ export const privateChat = async (req, res) => {
             })
         }
 
-        //Check if the chat already exists
 
         const chat = await Chat.findOne({
 
@@ -73,7 +65,6 @@ export const privateChat = async (req, res) => {
 
 
 
-        //if chat exists then return here
         if (chat) {
             return res.status(200).json({
                 success: true,
@@ -82,7 +73,6 @@ export const privateChat = async (req, res) => {
             })
         }
 
-        //create new chat
         const newChat = await Chat.create({
 
             isGroupChat: false,
@@ -137,9 +127,33 @@ export const groupChat = async (req, res) => {
             })
         }
 
-        //add the logged-in user also
-        groupMembers.push(req.user.id);
 
+        const currentUser = await User.findById(req.user.id)
+            .select("blockedUsers");
+
+        const members = await User.find({
+            _id: { $in: groupMembers }
+        });
+
+        for (const member of members) {
+
+            const iBlockedHim = req.user.blockedUsers.some(
+                id => id.toString() === member._id.toString()
+            );
+
+            const heBlockedMe = member.blockedUsers.some(
+                id => id.toString() === req.user.id.toString()
+            );
+
+            if (iBlockedHim || heBlockedMe) {
+                return res.status(400).json({
+                    success: false,
+                    message: `${member.name} cannot be added to the group.`
+                });
+            }
+        }
+
+        groupMembers.push(req.user.id);
         const groupChat = await Chat.create({
             chatName: groupName,
             isGroupChat: true,
@@ -217,13 +231,13 @@ export const sendMessages = async (req, res) => {
                 });
             }
         } else {
-            // pehle check karo exist karti hai
+
             chat = await Chat.findOne({
                 isGroupChat: false,
                 users: { $all: [req.user.id, receiverId] }
             });
 
-            // nahi karti — banao
+
             if (!chat) {
                 chat = await Chat.create({
                     isGroupChat: false,
@@ -232,7 +246,7 @@ export const sendMessages = async (req, res) => {
             }
         }
 
-        // Block check only for private chat
+
         if (!chat.isGroupChat) {
 
             const otherId = chatId
@@ -329,19 +343,19 @@ export const myAllChats = async (req, res) => {
             });
         }
 
-        
+
         const visibleChats = chats.filter(chat => {
             const entry = chat.deletedFor?.find(
                 d => d.userId.toString() === req.user.id.toString()
             );
 
-            if (!entry) return true; 
+            if (!entry) return true;
 
             if (entry.isCleared) return true;
 
-            if (!chat.latestMessage) return false; 
+            if (!chat.latestMessage) return false;
 
-           
+
             return chat.latestMessage.createdAt > entry.clearedAt;
         });
 
@@ -392,13 +406,13 @@ export const getMessages = async (req, res) => {
             });
         }
 
-       
         const entry = chat.deletedFor?.find(
             d => d.userId.toString() === req.user.id.toString()
         );
 
         const messages = await Message.find({
             chat: chatId,
+            deletedFor: { $nin: [req.user.id] },
             ...(entry && { createdAt: { $gt: entry.clearedAt } })
         })
             .sort({ createdAt: 1 })
@@ -406,28 +420,15 @@ export const getMessages = async (req, res) => {
             .populate({
                 path: "chat",
                 populate: [
-                    {
-                        path: "users",
-                        select: "username name email"
-                    },
+                    { path: "users", select: "username name email" },
                     {
                         path: "latestMessage",
-                        populate: {
-                            path: "sender",
-                            select: "name"
-                        }
+                        populate: { path: "sender", select: "name" }
                     }
                 ]
             });
 
-        if (!messages) {
-            return res.status(400).json({
-                success: false,
-                message: "Failed to fetch the messages."
-            });
-        }
-
-        return res.status(201).json({
+        return res.status(200).json({
             success: true,
             message: "Messages fetched successfully.",
             messages
@@ -440,7 +441,6 @@ export const getMessages = async (req, res) => {
         });
     }
 }
-
 
 export const markMessagesRead = async (req, res) => {
     try {
@@ -593,16 +593,31 @@ export const addMember = async (req, res) => {
             });
         }
 
+
+        const currentUser = await User.findById(currentUserId)
+            .select("blockedUsers name");
+
+        const addedUser = await User.findById(userId)
+            .select("blockedUsers name");
+
+        const iBlockedHim = currentUser.blockedUsers.some(
+            id => id.toString() === userId.toString()
+        );
+
+        const heBlockedMe = addedUser.blockedUsers.some(
+            id => id.toString() === currentUserId.toString()
+        );
+
+        if (iBlockedHim || heBlockedMe) {
+            return res.status(400).json({
+                success: false,
+                message: `${addedUser.name} cannot be added to the group.`
+            });
+        }
+
+        
         group.users.push(userId);
         await group.save();
-
-        const addedUser = await User.findById(
-            userId
-        ).select("name");
-
-        const currentUser = await User.findById(
-            currentUserId
-        ).select("name");
 
         await createSystemMessage(
             chatId,
@@ -887,7 +902,7 @@ export const deleteChat = async (req, res) => {
             });
         }
 
-       
+
         const existingIndex = chat.deletedFor.findIndex(
             d => d.userId.toString() === userId.toString()
         );
@@ -903,7 +918,7 @@ export const deleteChat = async (req, res) => {
 
         await chat.save();
 
-        
+
         const latestMessage = await Message.findOne({ chat: chatId })
             .sort({ createdAt: -1 });
 
@@ -973,6 +988,152 @@ export const clearChat = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Chat cleared."
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const deleteMessageForMe = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user.id;
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found."
+            });
+        }
+
+        if (message.deletedFor.includes(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Message already deleted."
+            });
+        }
+
+        message.deletedFor.push(userId);
+        await message.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Message deleted for you."
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+export const deleteMessageForEveryone = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user.id;
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found."
+            });
+        }
+
+
+        if (message.sender.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You can only delete your own messages."
+            });
+        }
+
+        message.isDeleted = true;
+        message.content = "This message was deleted";
+        await message.save();
+
+
+        io.to(message.chat.toString()).emit("messageDeleted", {
+            messageId: message._id,
+            chatId: message.chat,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Message deleted for everyone."
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+export const editMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { content } = req.body;
+        const userId = req.user.id;
+
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                message: "Content is required."
+            });
+        }
+
+        const message = await Message.findById(messageId);
+
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: "Message not found."
+            });
+        }
+
+
+        if (message.sender.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You can only edit your own messages."
+            });
+        }
+
+        if (message.isDeleted) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot edit a deleted message."
+            });
+        }
+
+        message.content = content;
+        message.isEdited = true;
+        await message.save();
+
+        io.to(message.chat.toString()).emit("messageUpdated", {
+            messageId: message._id,
+            chatId: message.chat,
+            content: message.content,
+            isEdited: true,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Message updated.",
+            data: message
         });
 
     } catch (error) {

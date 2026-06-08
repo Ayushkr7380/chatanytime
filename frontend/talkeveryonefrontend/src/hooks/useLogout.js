@@ -7,21 +7,14 @@ import socket from "@/websocket/Socket";
 export const useLogout = () => {
 
     const queryClient = useQueryClient();
-
     const navigate = useNavigate();
-
     return useMutation({
 
         mutationFn: logoutApi,
 
         onSuccess: () => {
-
             socket.disconnect();
-
             queryClient.clear();
-
-            toast.success("Logged out");
-
             navigate("/authentication");
         },
 

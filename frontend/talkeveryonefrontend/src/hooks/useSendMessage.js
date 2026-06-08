@@ -1,10 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { sendMessageApi } from "@/api/messageApi";
-
-import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext";
-import { toast } from "sonner";
 import { useMe } from "./useMe";
-// import { useContext } from "react";
+
 
 export const useSendMessage = () => {
   const queryClient = useQueryClient();

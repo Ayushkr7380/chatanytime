@@ -36,7 +36,10 @@ function App() {
   return (
     <>
       <CustomRoutes />
-      <Toaster position="top-center" />
+      <Toaster position="top-center"
+        toastOptions={{
+          duration: 1500,
+        }} />
     </>
 
   )
