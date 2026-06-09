@@ -104,3 +104,23 @@ export const clearChatApi = async (chatId) => {
     );
     return response.data;
 };
+
+export const updateGroupBioApi = async ({ chatId, groupBio }) => {
+    const response = await axios.put(
+        `${backendURL}/user/group/${chatId}/bio`,
+        { groupBio },
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const uploadGroupPicApi = async ({ chatId, file }) => {
+    const formData = new FormData();
+    formData.append("groupPic", file);
+    const response = await axios.put(
+        `${backendURL}/user/group/${chatId}/pic`,
+        formData,
+        { withCredentials: true }
+    );
+    return response.data;
+};

@@ -2,6 +2,8 @@ import { io } from "../app.js";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import { User } from "../models/users.model.js";
+import { v2 as cloudinary } from "cloudinary";
+import fs from 'fs/promises';
 
 
 const createSystemMessage = async (chatId, content) => {
@@ -615,7 +617,7 @@ export const addMember = async (req, res) => {
             });
         }
 
-        
+
         group.users.push(userId);
         await group.save();
 
@@ -1141,5 +1143,115 @@ export const editMessage = async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+};
+
+export const updateGroupBio = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const { groupBio } = req.body;
+
+        const chat = await Chat.findById(chatId);
+
+        if (!chat) return res.status(404).json({ success: false, message: "Group not found." });
+
+        if (!chat.isGroupChat) return res.status(400).json({ success: false, message: "Not a group chat." });
+
+        if (chat.groupAdmin.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ success: false, message: "Only admin can update bio." });
+        }
+
+        chat.groupBio = groupBio;
+        await chat.save();
+
+        // system message
+        const updater = await User.findById(req.user.id).select("name");
+        const sysMessage = await Message.create({
+            sender: req.user.id,
+            content: `${updater.name} updated the group description`,
+            chat: chatId,
+            messageType: "system",
+            readBy: [req.user.id],
+        });
+
+        await Chat.findByIdAndUpdate(chatId, { latestMessage: sysMessage._id });
+
+        io.to(chatId).emit("groupUpdated", { chatId, groupBio: chat.groupBio });
+        io.to(chatId).emit("receiveMessage", {
+            _id: sysMessage._id,
+            content: sysMessage.content,
+            chatId,
+            sender: { _id: req.user.id, name: updater.name },
+            createdAt: sysMessage.createdAt,
+            readBy: sysMessage.readBy,
+            messageType: "system",
+        });
+
+        return res.status(200).json({ success: true, message: "Group bio updated.", chat });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const uploadGroupPic = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+
+        const chat = await Chat.findById(chatId);
+
+        if (!chat) return res.status(404).json({ success: false, message: "Group not found." });
+
+        if (!chat.isGroupChat) return res.status(400).json({ success: false, message: "Not a group chat." });
+
+        if (chat.groupAdmin.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ success: false, message: "Only admin can update group pic." });
+        }
+
+        if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded." });
+        const filePath = `uploads/${req.file.filename}`
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "chatanytime/groups",
+            public_id: `group_${chatId}`,
+            overwrite: true,
+            transformation: [{ width: 400, height: 400, crop: "fill" }]
+        });
+
+        try {
+            await fs.rm(req.file.path, { force: true });
+        } catch (e) {
+            console.warn('File not found or could not be deleted:', err.message);
+        }
+
+        chat.groupPic = result.secure_url;
+        await chat.save();
+
+        // system message
+        const updater = await User.findById(req.user.id).select("name");
+        const sysMessage = await Message.create({
+            sender: req.user.id,
+            content: `${updater.name} updated the group photo`,
+            chat: chatId,
+            messageType: "system",
+            readBy: [req.user.id],
+        });
+
+        await Chat.findByIdAndUpdate(chatId, { latestMessage: sysMessage._id });
+
+        io.to(chatId).emit("groupUpdated", { chatId, groupPic: chat.groupPic });
+        io.to(chatId).emit("receiveMessage", {
+            _id: sysMessage._id,
+            content: sysMessage.content,
+            chatId,
+            sender: { _id: req.user.id, name: updater.name },
+            createdAt: sysMessage.createdAt,
+            readBy: sysMessage.readBy,
+            messageType: "system",
+        });
+
+        return res.status(200).json({ success: true, message: "Group pic updated.", chat });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
 };

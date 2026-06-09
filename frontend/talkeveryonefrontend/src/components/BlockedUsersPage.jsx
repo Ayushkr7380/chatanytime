@@ -3,9 +3,10 @@ import { IoArrowBack } from "react-icons/io5";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useUnblockUser } from "@/hooks/useUnblockUser";
 import { useQueryClient } from "@tanstack/react-query";
-import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png";
+// import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png";
 import Skeleton from "@/components/Skeleton";
 import { useState } from "react";
+import { FaUserCircle } from "react-icons/fa";
 
 export default function BlockedUsersPage() {
     const navigate = useNavigate();
@@ -74,11 +75,15 @@ export default function BlockedUsersPage() {
                                 key={user._id}
                                 className="flex items-center gap-3 px-5 py-3 border-b border-slate-100 last:border-b-0"
                             >
-                                <img
-                                    src={user.profilePic || dummyprofilepic}
-                                    alt={user.name}
-                                    className="h-10 w-10 rounded-full object-cover border-2 border-slate-200 shrink-0"
-                                />
+                                {user?.privacy?.profilePic && user?.profilePic ? (
+                                    <img
+                                        src={user.profilePic}
+                                        alt={user.name}
+                                        className="h-9 w-9 object-cover rounded-full shrink-0"
+                                    />
+                                ) : (
+                                    <FaUserCircle className="text-4xl text-violet-400 shrink-0" />
+                                )}
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-slate-800 truncate">
                                         {user.name}

@@ -16,8 +16,11 @@ import {
     clearChat,
     editMessage,
     deleteMessageForEveryone,
-    deleteMessageForMe
+    deleteMessageForMe,
+    updateGroupBio,
+    uploadGroupPic
 } from "../controllers/chat.controllers.js";
+import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
@@ -35,6 +38,8 @@ router.put("/group/:chatId/add-member", isLoggedIn, addMember);
 router.put("/group/:chatId/remove-member", isLoggedIn, removeMember);
 router.put("/group/:chatId/make-admin", isLoggedIn, makeAdmin);
 router.put("/group/:chatId/rename", isLoggedIn, renameGroup);
+router.put("/group/:chatId/bio", isLoggedIn, updateGroupBio);
+router.put("/group/:chatId/pic", isLoggedIn, upload.single("groupPic"), uploadGroupPic);
 
 // Delete and Clear Chat routes
 router.delete("/chat/:chatId/delete", isLoggedIn, deleteChat);

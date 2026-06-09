@@ -34,7 +34,15 @@ const chatSchema = new Schema({
             },
             isCleared: { type: Boolean, default: false }
         }
-    ]
+    ],
+    groupBio: {
+        type: String,
+        default: ""
+    },
+    groupPic: {
+        type: String,
+        default: null
+    }
 
 },
     { timestamps: true });

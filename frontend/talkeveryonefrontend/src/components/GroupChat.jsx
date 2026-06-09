@@ -182,6 +182,12 @@ export default function GroupChat() {
             queryClient.invalidateQueries({ queryKey: ["chats"] });
         };
 
+        socket.on("groupUpdated", ({ chatId: updatedChatId }) => {
+            if (updatedChatId === chatId) {
+                queryClient.invalidateQueries({ queryKey: ["chats"] });
+            }
+        });
+
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
         socket.on("messageDeleted", handleMessageDeleted);
@@ -211,6 +217,7 @@ export default function GroupChat() {
             socket.off("typing");
             socket.off("stopTyping");
             socket.off("removedFromGroup");
+            socket.off("groupUpdated");
         };
     }, [chatId, queryClient, meData?.user?._id, navigate, markRead]);
 
@@ -289,7 +296,7 @@ export default function GroupChat() {
                                             >
                                                 Delete for me
                                             </button>
-                                            {allSelectedAreMine && !selectedMsg?.isDeleted &&(
+                                            {allSelectedAreMine && !selectedMsg?.isDeleted && (
                                                 <button
                                                     onClick={handleDeleteForEveryone}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
@@ -331,7 +338,17 @@ export default function GroupChat() {
                             onClick={() => navigate(`/group/${chatId}/info`)}
                             className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0"
                         >
-                            <FaUsers className="text-4xl text-violet-600 shrink-0" />
+                            {currentChat?.groupPic ? (
+                                <img
+                                    src={currentChat.groupPic}
+                                    alt={groupName}
+                                    className="h-10 w-10 rounded-full object-cover border-2 border-violet-200 shrink-0"
+                                />
+                            ) : (
+                                <div className="h-10 w-10 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center shrink-0">
+                                    <FaUsers className="text-lg text-violet-600" />
+                                </div>
+                            )}
                             <div className="min-w-0">
                                 <h2 className="font-semibold text-slate-800 text-sm truncate">
                                     {groupName}
