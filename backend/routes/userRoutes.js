@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById} from "../controllers/user.controllers.js";
+import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById, updateProfile, uploadProfilePic, getBlockedUsers, updatePrivacy} from "../controllers/user.controllers.js";
 import isLoggedIn from "../middlewares/isLoggedIn.js";
+import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
@@ -20,5 +21,13 @@ router.put("/unblock/:userId",isLoggedIn,unblockUser);
 
 router.get("/block-status/:userId",isLoggedIn,getBlockStatus);
 router.get("/user/:userId", isLoggedIn, getUserById);
+
+router.put("/update-profile", isLoggedIn, updateProfile);
+
+router.put("/upload-profile-pic", isLoggedIn, upload.single("profilePic"), uploadProfilePic);
+
+router.get("/blocked-users", isLoggedIn, getBlockedUsers);
+
+router.put("/update-privacy", isLoggedIn, updatePrivacy);
 
 export default router;

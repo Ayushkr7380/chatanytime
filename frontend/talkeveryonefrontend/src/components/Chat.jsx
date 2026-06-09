@@ -170,7 +170,7 @@ export default function Chat() {
             }
         };
 
-     
+
         const handleMessageDeleted = ({ messageId }) => {
             queryClient.setQueryData(["messages", chatId], (prev = []) =>
                 prev.map(msg =>
@@ -182,7 +182,7 @@ export default function Chat() {
             queryClient.invalidateQueries({ queryKey: ["chats"] });
         };
 
-      
+
         const handleMessageUpdated = ({ messageId, content, isEdited }) => {
             queryClient.setQueryData(["messages", chatId], (prev = []) =>
                 prev.map(msg =>
@@ -192,6 +192,21 @@ export default function Chat() {
                 )
             );
         };
+        const handlePrivacyUpdate = ({ userId }) => {
+
+            if (userId === otherUserId) {
+
+                queryClient.invalidateQueries({
+                    queryKey: ["status", otherUserId]
+                });
+
+            }
+        };
+
+        socket.on(
+            "userPrivacyUpdated",
+            handlePrivacyUpdate
+        );
 
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
@@ -238,8 +253,12 @@ export default function Chat() {
             socket.off("stopTyping");
             socket.off("userBlocked");
             socket.off("userUnblocked");
+            socket.off(
+            "userPrivacyUpdated",
+            handlePrivacyUpdate
+        );
         };
-    }, [chatId, queryClient]);
+    }, [chatId, queryClient,otherUserId]);
 
     const { register, handleSubmit, watch, reset, setValue } = useForm();
     const messageValue = watch("content");
@@ -317,7 +336,7 @@ export default function Chat() {
                                             >
                                                 Delete for me
                                             </button>
-                                            {allSelectedAreMine && !selectedMsg?.isDeleted &&  (
+                                            {allSelectedAreMine && !selectedMsg?.isDeleted && (
                                                 <button
                                                     onClick={handleDeleteForEveryone}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"

@@ -54,3 +54,40 @@ export const getUserById = async (userId) => {
     });
     return response.data.user;
 };
+
+export const updateProfileApi = async (data) => {
+    const response = await axios.put(
+        `${backendURL}/auth/update-profile`,
+        data,
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const uploadProfilePicApi = async (file) => {
+    const formData = new FormData();
+    formData.append("profilePic", file);
+    const response = await axios.put(
+        `${backendURL}/auth/upload-profile-pic`,
+        formData,
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const getBlockedUsersApi = async () => {
+    const response = await axios.get(
+        `${backendURL}/auth/blocked-users`,
+        { withCredentials: true }
+    );
+    return response.data;
+};
+
+export const updatePrivacyApi = async (data) => {
+    const response = await axios.put(
+        `${backendURL}/auth/update-privacy`,
+        data,
+        { withCredentials: true }
+    );
+    return response.data;
+};

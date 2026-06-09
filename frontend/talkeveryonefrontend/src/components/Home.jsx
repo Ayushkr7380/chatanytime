@@ -6,12 +6,13 @@ import { SearchUser } from "./SearchUser";
 import { useContext, useEffect } from "react";
 import { CreateSocketContext } from "@/context/socketContext/CreateSocketContext";
 import Skeleton from "@/components/Skeleton";
-import { useLocation } from "react-router-dom";
-import ProfileSheet from "./ProfileSheet";
+import { useLocation, useNavigate } from "react-router-dom";
 import socket from "../websocket/Socket";
+import dummyprofilepic from "../../public/Pictures/dummyprofilepic.png";
 
 function Home() {
     const location = useLocation();
+    const navigate = useNavigate();
     const { connectSocket } = useContext(CreateSocketContext);
     const { data, isLoading } = useMe();
 
@@ -28,10 +29,7 @@ function Home() {
         return (
             <div className="h-[100dvh] bg-slate-50">
                 <div className="flex h-full">
-
-                    {/* Sidebar Skeleton */}
                     <div className="w-full md:w-[35%] lg:w-[30%] bg-white border-r border-slate-200 flex flex-col h-[100dvh]">
-
                         <div className="flex items-center justify-between p-4 border-b border-slate-200 shrink-0">
                             <div>
                                 <Skeleton className="h-6 w-28 mb-2" />
@@ -42,7 +40,6 @@ function Home() {
                                 <Skeleton className="h-10 w-10 rounded-xl" />
                             </div>
                         </div>
-
                         <div className="p-4 space-y-4 flex-1" style={{ overflowY: "auto" }}>
                             {[...Array(10)].map((_, index) => (
                                 <div key={index} className="flex items-center gap-3">
@@ -54,10 +51,7 @@ function Home() {
                                 </div>
                             ))}
                         </div>
-
                     </div>
-
-                    {/* Chat Skeleton */}
                     <div className="hidden md:flex flex-1 flex-col bg-slate-50">
                         <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shrink-0">
                             <Skeleton className="h-10 w-10 rounded-full" />
@@ -70,7 +64,6 @@ function Home() {
                             <Skeleton className="h-12 w-64 rounded-2xl ml-auto" />
                         </div>
                     </div>
-
                 </div>
             </div>
         );
@@ -78,18 +71,20 @@ function Home() {
 
     const isChatPage =
         location.pathname.startsWith("/chat/") ||
-        location.pathname.startsWith("/group/") || location.pathname.startsWith("/new-chat/");
+        location.pathname.startsWith("/group/") ||
+        location.pathname.startsWith("/new-chat/");
+
+    const isProfilePage = location.pathname.startsWith("/profile");
 
     return (
         <div
             className="flex bg-slate-50 overflow-hidden"
             style={{ height: "var(--app-height)" }}
         >
-
             {/* Sidebar */}
             <aside
                 className={`
-                    ${isChatPage ? "hidden md:flex" : "flex"}
+                    ${isChatPage || isProfilePage ? "hidden md:flex" : "flex"}
                     w-full
                     md:w-[35%]
                     lg:w-[30%]
@@ -100,7 +95,6 @@ function Home() {
                     h-full
                 `}
             >
-
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
                     <div>
@@ -117,31 +111,53 @@ function Home() {
                     </div>
                 </div>
 
-                {/* Chat List - scroll */}
+                {/* Chat List */}
                 <div className="flex-1 min-h-0 overflow-y-auto">
                     <Messages />
                 </div>
 
-                {/* Footer */}
+                {/* Footer — profile navigate */}
                 <div className="border-t border-slate-200 p-3 bg-white shrink-0">
-                    <ProfileSheet user={data?.user} />
+                    <button
+                        onClick={() => navigate("/profile")}
+                        className={`
+                            w-full flex items-center gap-3 p-2 rounded-2xl
+                            transition-colors duration-150
+                            ${isProfilePage
+                                ? "bg-violet-100"
+                                : "hover:bg-violet-50 active:bg-violet-100"
+                            }
+                        `}
+                    >
+                        <img
+                            src={data?.user?.profilePic || dummyprofilepic}
+                            alt="profile"
+                            className="h-10 w-10 rounded-full object-cover border-2 border-violet-200 shrink-0"
+                        />
+                        <div className="flex-1 text-left min-w-0">
+                            <h3 className="font-semibold text-slate-800 text-sm truncate">
+                                {data?.user?.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 truncate">
+                                {data?.user?.email}
+                            </p>
+                        </div>
+                    </button>
                 </div>
-
             </aside>
 
-            {/* Chat Area */}
+            {/* Main area */}
             <main
                 className={`
-                    ${isChatPage ? "flex" : "hidden md:flex"}
+                    ${isChatPage || isProfilePage ? "flex" : "hidden md:flex"}
                     flex-1
                     bg-slate-50
                     h-full
-                     min-h-0
+                    min-h-0
                 `}
             >
                 <Outlet />
             </main>
-
         </div>
     );
 }

@@ -1,5 +1,7 @@
 import { User } from "../models/users.model.js";
 import { io } from "../app.js";
+import { v2 as cloudinary } from "cloudinary";
+import fs from 'fs/promises';
 
 const cookieOptions = {
     httpOnly: true,
@@ -202,7 +204,6 @@ export const getUserData = async (req, res) => {
 
 export const getUserStatus = async (req, res) => {
     try {
-
         const { userId } = req.params;
 
         const currentUser = await User.findById(
@@ -211,7 +212,9 @@ export const getUserStatus = async (req, res) => {
 
         const targetUser = await User.findById(
             userId
-        ).select("isOnline lastSeen blockedUsers");
+        ).select(
+            "isOnline lastSeen blockedUsers privacy bio profilePic"
+        );
 
         if (!targetUser) {
             return res.status(404).json({
@@ -222,15 +225,12 @@ export const getUserStatus = async (req, res) => {
 
         const iBlockedHim =
             currentUser.blockedUsers.some(
-                (id) =>
-                    id.toString() === userId
+                id => id.toString() === userId.toString()
             );
 
         const heBlockedMe =
             targetUser.blockedUsers.some(
-                (id) =>
-                    id.toString() ===
-                    req.user.id.toString()
+                id => id.toString() === req.user.id.toString()
             );
 
         if (iBlockedHim || heBlockedMe) {
@@ -239,14 +239,30 @@ export const getUserStatus = async (req, res) => {
                 hidden: true,
                 isOnline: false,
                 lastSeen: null,
+                bio: null,
+                profilePic: null,
             });
         }
 
         return res.status(200).json({
             success: true,
             hidden: false,
-            isOnline: targetUser.isOnline,
-            lastSeen: targetUser.lastSeen,
+
+            isOnline: targetUser.privacy?.onlineStatus
+                ? targetUser.isOnline
+                : false,
+
+            lastSeen: targetUser.privacy?.lastSeen
+                ? targetUser.lastSeen
+                : null,
+
+            bio: targetUser.privacy?.bio
+                ? targetUser.bio
+                : null,
+
+            profilePic: targetUser.privacy?.profilePic
+                ? targetUser.profilePic
+                : null,
         });
 
     } catch (error) {
@@ -256,6 +272,7 @@ export const getUserStatus = async (req, res) => {
         });
     }
 };
+
 export const blockUser = async (req, res) => {
     try {
 
@@ -422,6 +439,165 @@ export const getUserById = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { name, username, bio } = req.body;
+        const userId = req.user.id;
+
+        if (username) {
+            const existing = await User.findOne({
+                username,
+                _id: { $ne: userId }
+            });
+            if (existing) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Username already taken."
+                });
+            }
+        }
+
+        const updated = await User.findByIdAndUpdate(
+            userId,
+            {
+                ...(name && { name, nameUpdatedAt: new Date() }),
+                ...(username && { username, usernameUpdatedAt: new Date() }),
+                ...(bio !== undefined && { bio, bioUpdatedAt: new Date() })
+            },
+            { new: true }
+        ).select("-password");
+
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated.",
+            user: updated
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getBlockedUsers = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .populate("blockedUsers", "name username profilePic");
+
+        return res.status(200).json({
+            success: true,
+            blockedUsers: user.blockedUsers
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+export const uploadProfilePic = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded."
+            });
+        }
+
+        const filePath = `uploads/${req.file.filename}`;
+
+        // cloudinary upload
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "chatanytime/profiles",
+            public_id: `user_${req.user.id}`,
+            overwrite: true,
+            transformation: [{ width: 400, height: 400, crop: "fill" }]
+        });
+
+        const updated = await User.findByIdAndUpdate(
+            req.user.id,
+            { profilePic: result.secure_url },
+            { new: true }
+        ).select("-password");
+
+        try {
+            await fs.rm(filePath, { force: true });
+
+        } catch (err) {
+            console.warn('File not found or could not be deleted:', err.message);
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile pic updated.",
+            user: updated
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const updatePrivacy = async (req, res) => {
+    try {
+        const {
+            lastSeen,
+            profilePic,
+            bio,
+            onlineStatus
+        } = req.body;
+
+        const updateData = {};
+
+        if (lastSeen !== undefined) {
+            updateData["privacy.lastSeen"] = lastSeen;
+        }
+
+        if (profilePic !== undefined) {
+            updateData["privacy.profilePic"] = profilePic;
+        }
+
+        if (bio !== undefined) {
+            updateData["privacy.bio"] = bio;
+        }
+
+        if (onlineStatus !== undefined) {
+            updateData["privacy.onlineStatus"] = onlineStatus;
+        }
+
+        const updated = await User.findByIdAndUpdate(
+            req.user.id,
+            updateData,
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select("-password");
+        io.emit("userPrivacyUpdated", {
+            userId: req.user.id,
+            privacy: updated.privacy,
+            isOnline: updated.isOnline,
+            lastSeen: updated.lastSeen,
+            bio: updated.bio,
+            profilePic: updated.profilePic
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Privacy updated successfully.",
+            user: updated,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
         });
     }
 };
