@@ -192,15 +192,31 @@ export default function Chat() {
                 )
             );
         };
-        const handlePrivacyUpdate = ({ userId }) => {
+        const handlePrivacyUpdate = (data) => {
 
-            if (userId === otherUserId) {
+            if (data.userId !== otherUserId) return;
 
-                queryClient.invalidateQueries({
-                    queryKey: ["status", otherUserId]
-                });
+            queryClient.setQueryData(
+                ["status", otherUserId],
+                (old = {}) => ({
+                    ...old,
+                    profilePic: data.privacy?.profilePic
+                        ? data.profilePic
+                        : null,
 
-            }
+                    bio: data.privacy?.bio
+                        ? data.bio
+                        : null,
+
+                    isOnline: data.privacy?.onlineStatus
+                        ? data.isOnline
+                        : false,
+
+                    lastSeen: data.privacy?.lastSeen
+                        ? data.lastSeen
+                        : null,
+                })
+            );
         };
 
         socket.on(
@@ -254,11 +270,11 @@ export default function Chat() {
             socket.off("userBlocked");
             socket.off("userUnblocked");
             socket.off(
-            "userPrivacyUpdated",
-            handlePrivacyUpdate
-        );
+                "userPrivacyUpdated",
+                handlePrivacyUpdate
+            );
         };
-    }, [chatId, queryClient,otherUserId]);
+    }, [chatId, queryClient, otherUserId]);
 
     const { register, handleSubmit, watch, reset, setValue } = useForm();
     const messageValue = watch("content");
@@ -378,7 +394,15 @@ export default function Chat() {
                             onClick={() => navigate(`/chat/${chatId}/info`)}
                             className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0"
                         >
-                            <FaUserCircle className="text-4xl text-violet-500 shrink-0" />
+                            {statusData?.profilePic ? (
+                                <img
+                                    src={statusData.profilePic}
+                                    alt={otherUser?.name}
+                                    className="h-10 w-10 rounded-full object-cover shrink-0"
+                                />
+                            ) : (
+                                <FaUserCircle className="text-4xl text-violet-500 shrink-0" />
+                            )}
                             <div className="min-w-0">
                                 <h2 className="font-semibold text-slate-800 text-sm truncate">{otherUser?.name}</h2>
                                 {otherTyping ? (

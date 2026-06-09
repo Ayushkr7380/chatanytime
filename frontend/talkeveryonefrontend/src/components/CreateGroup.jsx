@@ -281,15 +281,15 @@ export default function CreateGroup() {
                                             <ItemMedia variant="image">
 
                                                 <img
-                                                    src={dummyprofilepic}
-                                                    alt={user.name}
-                                                    width={28}
-                                                    height={28}
-                                                    className="
-                                                        object-cover
-                                                        rounded-full
-                                                        grayscale
-                                                    "
+                                                    src={
+                                                        user?.privacy?.profilePic
+                                                            ? (user?.profilePic || dummyprofilepic)
+                                                            : dummyprofilepic
+                                                    }
+                                                    alt={user?.name}
+                                                    width={40}
+                                                    height={40}
+                                                    className="h-10 w-10 object-cover rounded-full"
                                                 />
 
                                             </ItemMedia>

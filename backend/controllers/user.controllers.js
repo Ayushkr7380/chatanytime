@@ -445,7 +445,7 @@ export const getUserById = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
     try {
-        const { name, username, bio } = req.body;
+        const { name, username, bio ,profilePic } = req.body;
         const userId = req.user.id;
 
         if (username) {
@@ -466,7 +466,8 @@ export const updateProfile = async (req, res) => {
             {
                 ...(name && { name, nameUpdatedAt: new Date() }),
                 ...(username && { username, usernameUpdatedAt: new Date() }),
-                ...(bio !== undefined && { bio, bioUpdatedAt: new Date() })
+                ...(bio !== undefined && { bio, bioUpdatedAt: new Date() }),
+                ...(profilePic === null && { profilePic: "" }),
             },
             { new: true }
         ).select("-password");

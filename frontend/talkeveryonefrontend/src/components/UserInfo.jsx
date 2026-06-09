@@ -13,21 +13,18 @@ export default function UserInfo() {
     const navigate = useNavigate();
     const { chatId } = useParams();
     const { data: chats } = useChats();
-     const chat = chats.find(
+    const chat = chats.find(
         (chat) => chat._id === chatId
     );
 
     const { data: meData } = useMe();
-    const otherUser = chat.users.find(
-        (user) =>
-            user._id !== meData?.user?._id
-    );
-     const { data: blockStatus } =useBlockStatus(otherUser?._id);
-    
+    const otherUser = chat.users.find((user) => user._id !== meData?.user?._id);
+    const { data: blockStatus } = useBlockStatus(otherUser?._id);
 
-    const { mutate: blockUser,isPending: blockingUser} = useBlockUser();
 
-    const { mutate: unblockUser,isPending: unblockingUser} = useUnblockUser();
+    const { mutate: blockUser, isPending: blockingUser } = useBlockUser();
+
+    const { mutate: unblockUser, isPending: unblockingUser } = useUnblockUser();
 
 
     if (!chats) {
@@ -38,7 +35,7 @@ export default function UserInfo() {
         );
     }
 
-   
+
 
     if (!chat) {
         return (
@@ -48,9 +45,9 @@ export default function UserInfo() {
         );
     }
 
-    
 
-   
+
+
     const handleBlockUser = () => {
         blockUser(otherUser._id);
     };
@@ -81,12 +78,17 @@ export default function UserInfo() {
             {/* Profile */}
             <div className="bg-white flex flex-col items-center py-10">
 
-                <FaUserCircle
-                    className="
-                        text-9xl
-                        text-violet-500
-                    "
-                />
+                {otherUser?.privacy?.profilePic && otherUser?.profilePic ? (
+                    <img
+                        src={otherUser.profilePic}
+                        alt={otherUser.name}
+                        className="h-36 w-36 rounded-full object-cover border-4 border-violet-200"
+                    />
+                ) : (
+                    <FaUserCircle
+                        className="text-9xl text-violet-500"
+                    />
+                )}
 
                 <h2 className="mt-5 text-2xl font-bold text-slate-800">
                     {otherUser?.name}

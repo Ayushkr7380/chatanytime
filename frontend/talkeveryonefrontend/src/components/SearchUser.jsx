@@ -80,6 +80,13 @@ export const SearchUser = () => {
                 )}
 
                 <div className="flex w-full max-w-md flex-col max-h-62.5 overflow-y-auto">
+                    {!isLoading &&
+                        debouncedKeyword &&
+                        users?.length === 0 && (
+                            <div className="py-6 text-center text-sm text-slate-500">
+                                User not found
+                            </div>
+                        )}
                     <ItemGroup className="gap-0.5 mx-1">
                         {users?.map((user) => (
                             <Item
@@ -91,17 +98,25 @@ export const SearchUser = () => {
                             >
                                 <ItemMedia variant="image">
                                     <img
-                                        src={dummyprofilepic}
-                                        alt=""
-                                        width={28}
-                                        height={28}
-                                        className="object-cover rounded-full grayscale"
+                                        src={
+                                            user?.privacy?.profilePic
+                                                ? (user?.profilePic || dummyprofilepic)
+                                                : dummyprofilepic
+                                        }
+                                        alt={user?.name}
+                                        width={40}
+                                        height={40}
+                                        className="h-10 w-10 object-cover rounded-full"
                                     />
                                 </ItemMedia>
                                 <ItemContent>
                                     <ItemTitle className="line-clamp-1">
                                         {user.name}
                                     </ItemTitle>
+
+                                    <p className="text-xs text-slate-500">
+                                        @{user.username}
+                                    </p>
                                 </ItemContent>
                             </Item>
                         ))}

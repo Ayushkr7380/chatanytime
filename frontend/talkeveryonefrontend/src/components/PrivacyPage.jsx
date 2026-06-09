@@ -28,7 +28,7 @@ export default function PrivacyPage() {
     const navigate = useNavigate();
     const { data: meData, isLoading } = useMe();
     const user = meData?.user;
-    const { mutate: updatePrivacy, isPending } = useUpdatePrivacy();
+    const { mutate: updatePrivacy } = useUpdatePrivacy();
 
     const handleToggle = (field, value) => {
         setUpdatingKey(field);

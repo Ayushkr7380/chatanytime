@@ -239,6 +239,8 @@ export default function Messages() {
                     const chatPath = chat.isGroupChat ? `/group/${chat._id}` : `/chat/${chat._id}`;
                     const isActive = location.pathname === chatPath;
 
+
+
                     return (
                         <Item
                             key={chat._id}
@@ -263,7 +265,11 @@ export default function Messages() {
                                         </div>
                                     ) : (
                                         <img
-                                            src={dummyprofilepic}
+                                            src={
+                                                otherUser?.privacy?.profilePic
+                                                    ? (otherUser?.profilePic || dummyprofilepic)
+                                                    : dummyprofilepic
+                                            }
                                             alt={otherUser?.name}
                                             width={48}
                                             height={48}
