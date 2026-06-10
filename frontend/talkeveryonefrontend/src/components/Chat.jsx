@@ -21,6 +21,7 @@ import { useChats } from "@/hooks/useChats";
 import { useDeleteMessageForMe } from "@/hooks/useDeleteMessageForMe";
 import { useDeleteMessageForEveryone } from "@/hooks/useDeleteMessageForEveryone";
 import { useEditMessage } from "@/hooks/useEditMessage";
+import { GrAttachment } from "react-icons/gr";
 
 export default function Chat() {
 
@@ -57,6 +58,19 @@ export default function Chat() {
     const { mutate: deleteForEveryone, isPending: isDeletingForEveryone } = useDeleteMessageForEveryone();
     const { mutate: editMessage, isPending: isEditing } = useEditMessage();
 
+    const [attachOpen, setAttachOpen] = useState(false);
+    const imageRef = useRef(null);
+    const pdfRef = useRef(null);
+    const fileRef = useRef(null);
+    const cameraRef = useRef(null);
+
+
+    const handleFileSelect = (files) => {
+        if (!files?.length) return;
+        sendMessage({ files: Array.from(files), chatId });
+        setAttachOpen(false);
+    };
+
     const isPending = isDeletingForMe || isDeletingForEveryone || isEditing;
 
     const allSelectedAreMine = selectedMessages.every(id => {
@@ -65,9 +79,8 @@ export default function Chat() {
     });
 
     const isSingleSelected = selectedMessages.length === 1;
-    const selectedMsg = isSingleSelected
-        ? messages.find(m => m._id === selectedMessages[0])
-        : null;
+    const selectedMsg = isSingleSelected ? messages.find(m => m._id === selectedMessages[0]) : null;
+    const isSelectedMsgEditable = selectedMsg?.messageType === "user" || !selectedMsg?.messageType;
 
     const handleSelectMessage = (messageId) => {
         setSelectedMessages(prev =>
@@ -152,17 +165,15 @@ export default function Chat() {
         socket.on("connect", joinRoom);
 
         const handleReceiveMessage = (msgData) => {
-            if (msgData.chatId === chatId) {
-                queryClient.setQueryData(["messages", chatId], (prev = []) => {
-                    const filtered = prev.filter(msg =>
-                        !(msg.optimistic && msg.content === msgData.content && msg.sender?._id === msgData.sender?._id)
-                    );
-                    return [...filtered, msgData];
-                });
-                markRead(chatId);
-            }
-            queryClient.invalidateQueries({ queryKey: ["chats"] });
-        };
+    if (msgData.chatId === chatId) {
+        queryClient.setQueryData(["messages", chatId], (prev = []) => {
+            const filtered = prev.filter(msg => !msg.optimistic);
+            return [...filtered, msgData];
+        });
+        markRead(chatId);
+    }
+    queryClient.invalidateQueries({ queryKey: ["chats"] });
+};
 
         const handleMessagesRead = ({ chatId: readChatId }) => {
             if (readChatId === chatId) {
@@ -360,7 +371,7 @@ export default function Chat() {
                                                     Delete for everyone
                                                 </button>
                                             )}
-                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && (
+                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && isSelectedMsgEditable &&(
                                                 <button
                                                     onClick={handleEditStart}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
@@ -435,6 +446,8 @@ export default function Chat() {
                         isRead={msg?.readBy?.includes(otherUserId)}
                         isDeleted={msg.isDeleted}
                         isEdited={msg.isEdited}
+                        messageType={msg.messageType}
+                        fileName={msg.fileName}
                         isSelected={selectedMessages.includes(msg._id)}
                         onSelect={handleSelectMessage}
                     />
@@ -462,35 +475,65 @@ export default function Chat() {
                 </div>
             ) : (
                 <div className="p-3 bg-white border-t border-slate-200 shrink-0">
-                    {/* edit indicator */}
                     {editingMessage && (
                         <div className="flex items-center justify-between px-2 py-1 mb-2 bg-violet-50 rounded-xl border border-violet-200">
                             <p className="text-xs text-violet-600">Editing message</p>
-                            <button
-                                onClick={handleCancelEdit}
-                                className="text-xs text-slate-500 hover:text-slate-700"
-                            >
-                                Cancel
-                            </button>
+                            <button onClick={handleCancelEdit} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
                         </div>
                     )}
+
+                    {/* Attachment menu */}
+                    {attachOpen && (
+                        <div className="flex gap-2 mb-2 px-1">
+                            {[
+                                { ref: imageRef, accept: "image/*", icon: "🖼️", label: "Image", bg: "bg-violet-50" },
+                                { ref: pdfRef, accept: "application/pdf", icon: "📄", label: "PDF", bg: "bg-red-50" },
+                                { ref: fileRef, accept: "*", icon: "📁", label: "File", bg: "bg-blue-50" },
+                                { ref: cameraRef, accept: "image/*", capture: "environment", icon: "📷", label: "Camera", bg: "bg-green-50" },
+                            ].map(({ ref, accept, capture, icon, label, bg }) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => ref.current?.click()}
+                                    className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl ${bg}`}
+                                >
+                                    <span className="text-lg">{icon}</span>
+                                    <span className="text-[10px] text-slate-500">{label}</span>
+                                    <input
+                                        ref={ref}
+                                        type="file"
+                                        accept={accept}
+                                        capture={capture}
+                                        multiple={label !== "Camera"}
+                                        className="hidden"
+                                        onChange={(e) => handleFileSelect(e.target.files)}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setAttachOpen(prev => !prev)}
+                            className={`h-10 w-10 flex items-center justify-center rounded-xl transition-colors shrink-0 ${attachOpen ? "bg-violet-100 text-violet-600" : "text-slate-400 hover:text-slate-600"}`}
+                        >
+                            <GrAttachment size={18} />
+                        </button>
                         <input
                             type="text"
                             placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-                            {...register("content", { required: "message is required" })}
-                            onChange={(e) => {
-                                register("content").onChange(e);
-                                if (!editingMessage) handleTyping();
-                            }}
+                            {...register("content")}
+                            onChange={(e) => { register("content").onChange(e); if (!editingMessage) handleTyping(); }}
                             className="flex-1 min-w-0 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
                         />
                         <button
                             type="submit"
-                            disabled={!messageValue || messageValue.trim() === ""}
-                            className="h-12 w-12 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 transition-colors disabled:opacity-40 shrink-0"
+                            disabled={!messageValue?.trim()}
+                            className="h-10 w-10 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 shrink-0"
                         >
-                            <IoSend size={18} />
+                            <IoSend size={16} />
                         </button>
                     </form>
                 </div>

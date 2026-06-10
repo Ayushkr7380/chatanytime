@@ -165,8 +165,14 @@ export default function Messages() {
             }
         }
 
-        return chat.latestMessage?.content ||
-            (chat.isGroupChat ? "Group created" : "Start chatting...");
+        const msg = chat.latestMessage;
+        if (!msg) return chat.isGroupChat ? "Group created" : "Start chatting...";
+
+        if (msg.messageType === "image") return "📷 Image";
+        if (msg.messageType === "pdf") return "📄 " + (msg.fileName || "PDF");
+        if (msg.messageType === "file") return "📁 " + (msg.fileName || "File");
+
+        return msg.content || (chat.isGroupChat ? "Group created" : "Start chatting...");
     };
     return (
         <div className="p-2">

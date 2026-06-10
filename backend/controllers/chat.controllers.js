@@ -207,11 +207,13 @@ export const groupChat = async (req, res) => {
 export const sendMessages = async (req, res) => {
     try {
         const { content, chatId, receiverId } = req.body;
+        const files = req.files;
 
-        if (!content) {
+        // content ya files — ek toh chahiye
+        if (!content && (!files || files.length === 0)) {
             return res.status(400).json({
                 success: false,
-                message: "Content is required."
+                message: "Content or file is required."
             });
         }
 
@@ -233,12 +235,10 @@ export const sendMessages = async (req, res) => {
                 });
             }
         } else {
-
             chat = await Chat.findOne({
                 isGroupChat: false,
                 users: { $all: [req.user.id, receiverId] }
             });
-
 
             if (!chat) {
                 chat = await Chat.create({
@@ -248,9 +248,8 @@ export const sendMessages = async (req, res) => {
             }
         }
 
-
+        // block check
         if (!chat.isGroupChat) {
-
             const otherId = chatId
                 ? chat.users.find(id => id.toString() !== req.user.id.toString())
                 : receiverId;
@@ -259,9 +258,8 @@ export const sendMessages = async (req, res) => {
             const receiver = await User.findById(otherId);
 
             const iBlockedHim = sender.blockedUsers.some(
-                (id) => id.toString() === otherId.toString()
+                id => id.toString() === otherId.toString()
             );
-
             if (iBlockedHim) {
                 return res.status(403).json({
                     success: false,
@@ -270,9 +268,8 @@ export const sendMessages = async (req, res) => {
             }
 
             const heBlockedMe = receiver.blockedUsers.some(
-                (id) => id.toString() === req.user.id.toString()
+                id => id.toString() === req.user.id.toString()
             );
-
             if (heBlockedMe) {
                 return res.status(403).json({
                     success: false,
@@ -281,44 +278,90 @@ export const sendMessages = async (req, res) => {
             }
         }
 
-        let message = await Message.create({
-            sender: req.user.id,
-            content,
-            chat: chat._id,
-            readBy: [req.user.id],
-        });
+        let lastMessage;
 
-        if (!message) {
-            return res.status(400).json({
-                success: false,
-                message: "Failed to send message"
+        // file messages
+        if (files && files.length > 0) {
+            for (const file of files) {
+                const mime = file.mimetype;
+                const result = await cloudinary.uploader.upload(file.path, {
+                    folder: "chatanytime/messages",
+                    resource_type: mime.startsWith("image/") ? "image" : "raw",
+                    access_mode: "public",
+                });
+
+                try { await fs.rm(file.path, { force: true }); } catch (e) { }
+
+                let messageType = "file";
+                if (mime.startsWith("image/")) messageType = "image";
+                else if (mime === "application/pdf") messageType = "pdf";
+
+                let fileUrl = result.secure_url;
+
+                let fileMessage = await Message.create({
+                    sender: req.user.id,
+                    content: fileUrl,
+                    chat: chat._id,
+                    readBy: [req.user.id],
+                    messageType,
+                    fileName: file.originalname,
+                });
+
+                fileMessage = await fileMessage.populate("sender", "username email name");
+                lastMessage = fileMessage;
+
+                io.to(chat._id.toString()).emit("receiveMessage", {
+                    _id: fileMessage._id,
+                    content: fileMessage.content,
+                    chatId: chat._id,
+                    sender: fileMessage.sender,
+                    createdAt: fileMessage.createdAt,
+                    readBy: fileMessage.readBy,
+                    messageType: fileMessage.messageType,
+                    fileName: fileMessage.fileName,
+                });
+            }
+        }
+
+        // text message
+        if (content) {
+            let message = await Message.create({
+                sender: req.user.id,
+                content,
+                chat: chat._id,
+                readBy: [req.user.id],
+                messageType: "user",
+            });
+
+            message = await message.populate("sender", "username email name");
+            lastMessage = message;
+
+            io.to(chat._id.toString()).emit("receiveMessage", {
+                _id: message._id,
+                content: message.content,
+                chatId: chat._id,
+                sender: message.sender,
+                createdAt: message.createdAt,
+                readBy: message.readBy,
+                messageType: "user",
             });
         }
 
-        message = await message.populate("sender", "username email name");
-
+        // latestMessage update
         await Chat.findByIdAndUpdate(chat._id, {
-            latestMessage: message._id,
+            latestMessage: lastMessage._id,
         });
 
+        // notification
         const freshChat = await Chat.findById(chat._id).select("users");
-        freshChat.users.forEach((user) => {
+        freshChat.users.forEach(user => {
             io.to(user._id.toString()).emit("newMessageNotification", { chatId: chat._id });
-        });
-
-        io.to(chat._id.toString()).emit("receiveMessage", {
-            _id: message._id,
-            content: message.content,
-            chatId: chat._id,
-            sender: message.sender,
-            createdAt: message.createdAt,
-            readBy: message.readBy,
         });
 
         return res.status(201).json({
             success: true,
             message: "Message sent successfully",
-            data: message
+            data: lastMessage
         });
 
     } catch (error) {

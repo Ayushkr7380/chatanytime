@@ -10,27 +10,38 @@ export const useSendMessage = () => {
   return useMutation({
     mutationFn: sendMessageApi,
 
-    onMutate: async ({ content, chatId }) => {
-      const previousMessages =
-        queryClient.getQueryData(["messages", chatId]);
-
-      queryClient.setQueryData(
-        ["messages", chatId],
-        (old = []) => [
+    onMutate: async ({ content, chatId, files }) => {
+      if (files?.length) {
+      
+        const previousMessages = queryClient.getQueryData(["messages", chatId]);
+        queryClient.setQueryData(["messages", chatId], (old = []) => [
           ...old,
           {
             _id: `temp-${Date.now()}`,
-            content,
-            sender: {
-              _id: meData?.user?._id,
-            },
+            content: "Sending...",
+            sender: { _id: meData?.user?._id },
             createdAt: new Date().toISOString(),
             readBy: [],
             optimistic: true,
+            messageType: "uploading",
           },
-        ]
-      );
+        ]);
+        return { previousMessages };
+      }
 
+      
+      const previousMessages = queryClient.getQueryData(["messages", chatId]);
+      queryClient.setQueryData(["messages", chatId], (old = []) => [
+        ...old,
+        {
+          _id: `temp-${Date.now()}`,
+          content,
+          sender: { _id: meData?.user?._id },
+          createdAt: new Date().toISOString(),
+          readBy: [],
+          optimistic: true,
+        },
+      ]);
       return { previousMessages };
     },
 

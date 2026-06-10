@@ -5,6 +5,7 @@ import { MessageBubble } from "./MessageBubble";
 import { useForm } from "react-hook-form";
 import { IoArrowBack, IoSend } from "react-icons/io5";
 import { BsThreeDotsVertical } from "react-icons/bs";
+import { GrAttachment } from "react-icons/gr";
 import socket from "@/websocket/Socket";
 import { useMessages } from "@/hooks/useMessages";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,12 @@ export default function GroupChat() {
     const [selectedMessages, setSelectedMessages] = useState([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [editingMessage, setEditingMessage] = useState(null);
+    const [attachOpen, setAttachOpen] = useState(false);
+
+    const imageRef = useRef(null);
+    const pdfRef = useRef(null);
+    const fileRef = useRef(null);
+    const cameraRef = useRef(null);
 
     const { mutate: deleteForMe, isPending: isDeletingForMe } = useDeleteMessageForMe(chatId);
     const { mutate: deleteForEveryone, isPending: isDeletingForEveryone } = useDeleteMessageForEveryone(chatId);
@@ -59,15 +66,12 @@ export default function GroupChat() {
     });
 
     const isSingleSelected = selectedMessages.length === 1;
-    const selectedMsg = isSingleSelected
-        ? messages.find(m => m._id === selectedMessages[0])
-        : null;
+    const selectedMsg = isSingleSelected ? messages.find(m => m._id === selectedMessages[0]) : null;
+    const isSelectedMsgEditable = selectedMsg?.messageType === "user" || !selectedMsg?.messageType;
 
     const handleSelectMessage = (messageId) => {
         setSelectedMessages(prev =>
-            prev.includes(messageId)
-                ? prev.filter(id => id !== messageId)
-                : [...prev, messageId]
+            prev.includes(messageId) ? prev.filter(id => id !== messageId) : [...prev, messageId]
         );
         setMenuOpen(false);
     };
@@ -103,6 +107,12 @@ export default function GroupChat() {
         typingTimeoutRef.current = setTimeout(() => stopTyping(chatId), 2000);
     };
 
+    const handleFileSelect = (files) => {
+        if (!files?.length) return;
+        sendMessage({ files: Array.from(files), chatId });
+        setAttachOpen(false);
+    };
+
     useEffect(() => {
         markRead(chatId);
         setSelectedMessages([]);
@@ -115,9 +125,7 @@ export default function GroupChat() {
         const entry = chat?.deletedFor?.find(
             d => d.userId.toString() === meData?.user?._id.toString()
         );
-
         const hasDeleted = entry && !entry.isCleared;
-
         if (hasDeleted) {
             queryClient.removeQueries({ queryKey: ["messages", chatId] });
         } else {
@@ -174,20 +182,15 @@ export default function GroupChat() {
         const handleMessageUpdated = ({ messageId, content, isEdited }) => {
             queryClient.setQueryData(["messages", chatId], (prev = []) =>
                 prev.map(msg =>
-                    msg._id === messageId
-                        ? { ...msg, content, isEdited }
-                        : msg
+                    msg._id === messageId ? { ...msg, content, isEdited } : msg
                 )
             );
             queryClient.invalidateQueries({ queryKey: ["chats"] });
         };
 
         socket.on("groupUpdated", ({ chatId: updatedChatId }) => {
-            if (updatedChatId === chatId) {
-                queryClient.invalidateQueries({ queryKey: ["chats"] });
-            }
+            if (updatedChatId === chatId) queryClient.invalidateQueries({ queryKey: ["chats"] });
         });
-
         socket.on("receiveMessage", handleReceiveMessage);
         socket.on("messagesRead", handleMessagesRead);
         socket.on("messageDeleted", handleMessageDeleted);
@@ -228,12 +231,7 @@ export default function GroupChat() {
         if (editingMessage) {
             editMessage(
                 { messageId: editingMessage.id, content },
-                {
-                    onSuccess: () => {
-                        setEditingMessage(null);
-                        reset();
-                    }
-                }
+                { onSuccess: () => { setEditingMessage(null); reset(); } }
             );
         } else {
             sendMessage({ content, chatId });
@@ -269,10 +267,7 @@ export default function GroupChat() {
             <div className="h-16 bg-white border-b border-slate-200 flex items-center px-3 shrink-0">
                 {selectedMessages.length > 0 ? (
                     <div className="flex items-center justify-between w-full">
-                        <p className="text-sm text-slate-600 font-medium">
-                            {selectedMessages.length} selected
-                        </p>
-
+                        <p className="text-sm text-slate-600 font-medium">{selectedMessages.length} selected</p>
                         {isPending ? (
                             <div className="flex items-center gap-2 px-2">
                                 <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -287,35 +282,24 @@ export default function GroupChat() {
                                     >
                                         <BsThreeDotsVertical size={18} />
                                     </button>
-
                                     {menuOpen && (
                                         <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border border-slate-100 w-44 z-50 overflow-hidden">
-                                            <button
-                                                onClick={handleDeleteForMe}
-                                                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-                                            >
+                                            <button onClick={handleDeleteForMe} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
                                                 Delete for me
                                             </button>
                                             {allSelectedAreMine && !selectedMsg?.isDeleted && (
-                                                <button
-                                                    onClick={handleDeleteForEveryone}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-                                                >
+                                                <button onClick={handleDeleteForEveryone} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
                                                     Delete for everyone
                                                 </button>
                                             )}
-                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && (
-                                                <button
-                                                    onClick={handleEditStart}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-                                                >
+                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && isSelectedMsgEditable && (
+                                                <button onClick={handleEditStart} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
                                                     Edit message
                                                 </button>
                                             )}
                                         </div>
                                     )}
                                 </div>
-
                                 <button
                                     onClick={() => { setSelectedMessages([]); setMenuOpen(false); }}
                                     className="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm"
@@ -327,35 +311,20 @@ export default function GroupChat() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => navigate("/")}
-                            className="md:hidden p-2 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors shrink-0"
-                        >
+                        <button onClick={() => navigate("/")} className="md:hidden p-2 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors shrink-0">
                             <IoArrowBack size={20} className="text-slate-700" />
                         </button>
-
-                        <div
-                            onClick={() => navigate(`/group/${chatId}/info`)}
-                            className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0"
-                        >
+                        <div onClick={() => navigate(`/group/${chatId}/info`)} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0">
                             {currentChat?.groupPic ? (
-                                <img
-                                    src={currentChat.groupPic}
-                                    alt={groupName}
-                                    className="h-10 w-10 rounded-full object-cover border-2 border-violet-200 shrink-0"
-                                />
+                                <img src={currentChat.groupPic} alt={groupName} className="h-10 w-10 rounded-full object-cover border-2 border-violet-200 shrink-0" />
                             ) : (
                                 <div className="h-10 w-10 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center shrink-0">
                                     <FaUsers className="text-lg text-violet-600" />
                                 </div>
                             )}
                             <div className="min-w-0">
-                                <h2 className="font-semibold text-slate-800 text-sm truncate">
-                                    {groupName}
-                                </h2>
-                                <p className="text-xs text-slate-500">
-                                    {membersCount} members
-                                </p>
+                                <h2 className="font-semibold text-slate-800 text-sm truncate">{groupName}</h2>
+                                <p className="text-xs text-slate-500">{membersCount} members</p>
                             </div>
                         </div>
                     </div>
@@ -363,29 +332,28 @@ export default function GroupChat() {
             </div>
 
             {/* Messages */}
-            <div
-                ref={messagesContainerRef}
-                className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto"
-            >
-                {messages?.map((msg) => (
-                    <MessageBubble
-                        key={msg._id}
-                        messageId={msg._id}
-                        text={msg.content}
-                        messageType={msg.messageType}
-                        isSender={msg?.sender?._id === meData?.user?._id}
-                        senderName={msg?.sender?._id !== meData?.user?._id ? msg?.sender?.name : null}
-                        time={new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                        })}
-                        isDeleted={msg.isDeleted}
-                        isEdited={msg.isEdited}
-                        isSelected={selectedMessages.includes(msg._id)}
-                        onSelect={handleSelectMessage}
-                    />
-                ))}
+            <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto">
+                {messages?.map((msg) => {
+                    const isSender = msg?.sender?._id === meData?.user?._id;
+                    const senderUser = currentChat?.users?.find(u => u._id === msg?.sender?._id);
+                    return (
+                        <MessageBubble
+                            key={msg._id}
+                            messageId={msg._id}
+                            text={msg.content}
+                            messageType={msg.messageType}
+                            fileName={msg.fileName}
+                            isSender={isSender}
+                            senderName={!isSender ? msg?.sender?.name : null}
+                            senderPic={!isSender ? (senderUser?.privacy?.profilePic ? senderUser?.profilePic : null) : null}
+                            time={new Date(msg.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })}
+                            isDeleted={msg.isDeleted}
+                            isEdited={msg.isEdited}
+                            isSelected={selectedMessages.includes(msg._id)}
+                            onSelect={handleSelectMessage}
+                        />
+                    );
+                })}
                 {otherTyping && <TypingBubble name={typerName} />}
                 <div ref={bottomRef} />
             </div>
@@ -395,31 +363,61 @@ export default function GroupChat() {
                 {editingMessage && (
                     <div className="flex items-center justify-between px-2 py-1 mb-2 bg-violet-50 rounded-xl border border-violet-200">
                         <p className="text-xs text-violet-600">Editing message</p>
-                        <button
-                            onClick={handleCancelEdit}
-                            className="text-xs text-slate-500 hover:text-slate-700"
-                        >
-                            Cancel
-                        </button>
+                        <button onClick={handleCancelEdit} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
                     </div>
                 )}
+
+                {attachOpen && (
+                    <div className="flex gap-2 mb-2 px-1">
+                        {[
+                            { ref: imageRef, accept: "image/*", label: "Image", bg: "bg-violet-50", icon: "🖼️" },
+                            { ref: pdfRef, accept: "application/pdf", label: "PDF", bg: "bg-red-50", icon: "📄" },
+                            { ref: fileRef, accept: "*", label: "File", bg: "bg-blue-50", icon: "📁" },
+                            { ref: cameraRef, accept: "image/*", capture: "environment", label: "Camera", bg: "bg-green-50", icon: "📷" },
+                        ].map(({ ref, accept, capture, label, bg, icon }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={() => ref.current?.click()}
+                                className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl ${bg}`}
+                            >
+                                <span className="text-lg">{icon}</span>
+                                <span className="text-[10px] text-slate-500">{label}</span>
+                                <input
+                                    ref={ref}
+                                    type="file"
+                                    accept={accept}
+                                    capture={capture}
+                                    multiple={label !== "Camera"}
+                                    className="hidden"
+                                    onChange={(e) => handleFileSelect(e.target.files)}
+                                />
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setAttachOpen(prev => !prev)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-xl transition-colors shrink-0 ${attachOpen ? "bg-violet-100 text-violet-600" : "text-slate-400 hover:text-slate-600"}`}
+                    >
+                        <GrAttachment size={18} />
+                    </button>
                     <input
                         type="text"
                         placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-                        {...register("content", { required: "message is required" })}
-                        onChange={(e) => {
-                            register("content").onChange(e);
-                            if (!editingMessage) handleTyping();
-                        }}
+                        {...register("content")}
+                        onChange={(e) => { register("content").onChange(e); if (!editingMessage) handleTyping(); }}
                         className="flex-1 min-w-0 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
                     />
                     <button
                         type="submit"
-                        disabled={!messageValue || messageValue.trim() === ""}
-                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800 transition-colors disabled:opacity-40 shrink-0"
+                        disabled={!messageValue?.trim()}
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 shrink-0"
                     >
-                        <IoSend size={18} />
+                        <IoSend size={16} />
                     </button>
                 </form>
             </div>

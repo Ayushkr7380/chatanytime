@@ -20,8 +20,12 @@ const messageSchema = new Schema({
     }],
     messageType: {
         type: String,
-        enum: ["user", "system"],
+        enum: ["user", "system", "image", "pdf", "file", "audio"],
         default: "user"
+    },
+    fileName: {
+        type: String,
+        default: null
     },
     deletedFor: [{
         type: Schema.Types.ObjectId,

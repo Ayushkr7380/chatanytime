@@ -9,36 +9,44 @@ export const getMessages = async (chatId) => {
   return response.data.messages;
 };
 
-export const sendMessageApi = async ({ content, chatId ,receiverId }) => {
+export const sendMessageApi = async ({ content, chatId, receiverId, files }) => {
+  const formData = new FormData();
+  if (content) formData.append("content", content);
+  if (chatId) formData.append("chatId", chatId);
+  if (receiverId) formData.append("receiverId", receiverId);
+  if (files?.length) {
+    files.forEach(file => formData.append("files", file));
+  }
+
   const response = await axios.post(
     `${backendURL}/user/message`,
-    { content, chatId ,receiverId  },
+    formData,
     { withCredentials: true }
   );
   return response.data;
 };
 
 export const deleteMessageForMeApi = async (messageId) => {
-    const response = await axios.delete(
-        `${backendURL}/user/message/${messageId}/delete-for-me`,
-        { withCredentials: true }
-    );
-    return response.data;
+  const response = await axios.delete(
+    `${backendURL}/user/message/${messageId}/delete-for-me`,
+    { withCredentials: true }
+  );
+  return response.data;
 };
 
 export const deleteMessageForEveryoneApi = async (messageId) => {
-    const response = await axios.delete(
-        `${backendURL}/user/message/${messageId}/delete-for-everyone`,
-        { withCredentials: true }
-    );
-    return response.data;
+  const response = await axios.delete(
+    `${backendURL}/user/message/${messageId}/delete-for-everyone`,
+    { withCredentials: true }
+  );
+  return response.data;
 };
 
 export const editMessageApi = async ({ messageId, content }) => {
-    const response = await axios.put(
-        `${backendURL}/user/message/${messageId}/edit`,
-        { content },
-        { withCredentials: true }
-    );
-    return response.data;
+  const response = await axios.put(
+    `${backendURL}/user/message/${messageId}/edit`,
+    { content },
+    { withCredentials: true }
+  );
+  return response.data;
 };

@@ -22,11 +22,12 @@ import {
 } from "../controllers/chat.controllers.js";
 import upload from "../middlewares/multer.middleware.js";
 
+
 const router = Router();
 
 router.get("/all-chats",isLoggedIn,myAllChats);
 router.post("/chat/:id",isLoggedIn,privateChat);
-router.post("/message",isLoggedIn,sendMessages);
+router.post("/message", isLoggedIn, upload.array("files", 5), sendMessages);
 router.get("/message/:chatId",isLoggedIn,getMessages);
 router.put("/message/read/:chatId", isLoggedIn, markMessagesRead);
 
