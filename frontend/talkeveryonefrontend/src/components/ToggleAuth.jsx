@@ -13,31 +13,17 @@ import Login from "./Login"
 
 export default function ToggleAuth() {
   return (
-    <div className="flex justify-center mt-10">
-        <Tabs defaultValue="Registration" className="w-100 ">
-            <div className="flex justify-center">
-                <TabsList >
-                    <TabsTrigger value="Registration">Registration</TabsTrigger>
-                    <TabsTrigger value="Login">Login</TabsTrigger>
-                </TabsList>
-            </div>
-        
-        <TabsContent value="Registration">
-            <Card>
-            <CardContent className="text-muted-foreground text-sm">
-                <Registration/>
-            </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="Login">
-            <Card>
-            <CardContent className="text-muted-foreground text-sm">
-                <Login/>
-            </CardContent>
-            </Card>
-        </TabsContent>
-        
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white border border-violet-200 rounded-2xl p-6 w-full max-w-sm">
+        <Tabs defaultValue="Login">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="Login" className="flex-1">Login</TabsTrigger>
+            <TabsTrigger value="Registration" className="flex-1">Register</TabsTrigger>
+          </TabsList>
+          <TabsContent value="Login"><Login /></TabsContent>
+          <TabsContent value="Registration"><Registration /></TabsContent>
         </Tabs>
+      </div>
     </div>
-  )
+  );
 }
