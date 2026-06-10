@@ -146,9 +146,7 @@ export default function GroupChat() {
         const handleReceiveMessage = (msgData) => {
             if (msgData.chatId === chatId) {
                 queryClient.setQueryData(["messages", chatId], (prev = []) => {
-                    const filtered = prev.filter(msg =>
-                        !(msg.optimistic && msg.content === msgData.content && msg.sender?._id === msgData.sender?._id)
-                    );
+                    const filtered = prev.filter(msg => !msg.optimistic);
                     return [...filtered, msgData];
                 });
                 markRead(chatId);

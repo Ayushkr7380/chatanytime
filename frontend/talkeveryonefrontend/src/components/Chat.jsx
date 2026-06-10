@@ -165,15 +165,15 @@ export default function Chat() {
         socket.on("connect", joinRoom);
 
         const handleReceiveMessage = (msgData) => {
-    if (msgData.chatId === chatId) {
-        queryClient.setQueryData(["messages", chatId], (prev = []) => {
-            const filtered = prev.filter(msg => !msg.optimistic);
-            return [...filtered, msgData];
-        });
-        markRead(chatId);
-    }
-    queryClient.invalidateQueries({ queryKey: ["chats"] });
-};
+            if (msgData.chatId === chatId) {
+                queryClient.setQueryData(["messages", chatId], (prev = []) => {
+                    const filtered = prev.filter(msg => !msg.optimistic);
+                    return [...filtered, msgData];
+                });
+                markRead(chatId);
+            }
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
+        };
 
         const handleMessagesRead = ({ chatId: readChatId }) => {
             if (readChatId === chatId) {
@@ -371,7 +371,7 @@ export default function Chat() {
                                                     Delete for everyone
                                                 </button>
                                             )}
-                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && isSelectedMsgEditable &&(
+                                            {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && isSelectedMsgEditable && (
                                                 <button
                                                     onClick={handleEditStart}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
