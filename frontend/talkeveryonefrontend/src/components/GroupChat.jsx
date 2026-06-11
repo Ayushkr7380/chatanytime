@@ -49,6 +49,8 @@ export default function GroupChat() {
     const [editingMessage, setEditingMessage] = useState(null);
     const [attachOpen, setAttachOpen] = useState(false);
 
+    const [replyingTo, setReplyingTo] = useState(null);
+
     const imageRef = useRef(null);
     const pdfRef = useRef(null);
     const fileRef = useRef(null);
@@ -109,7 +111,14 @@ export default function GroupChat() {
 
     const handleFileSelect = (files) => {
         if (!files?.length) return;
-        sendMessage({ files: Array.from(files), chatId });
+
+        sendMessage({
+            files: Array.from(files),
+            chatId,
+            replyTo: replyingTo?._id
+        });
+
+        setReplyingTo(null);
         setAttachOpen(false);
     };
 
@@ -232,7 +241,13 @@ export default function GroupChat() {
                 { onSuccess: () => { setEditingMessage(null); reset(); } }
             );
         } else {
-            sendMessage({ content, chatId });
+            sendMessage({
+                content,
+                chatId,
+                replyTo: replyingTo?._id
+            });
+
+            setReplyingTo(null);
             reset();
         }
     };
@@ -349,12 +364,44 @@ export default function GroupChat() {
                             isEdited={msg.isEdited}
                             isSelected={selectedMessages.includes(msg._id)}
                             onSelect={handleSelectMessage}
+                            replyTo={msg.replyTo}
+                            onReply={(id) => {
+                                const msg = messages.find(m => m._id === id);
+                                setReplyingTo(msg);
+                            }}
                         />
                     );
                 })}
                 {otherTyping && <TypingBubble name={typerName} />}
                 <div ref={bottomRef} />
             </div>
+
+            {replyingTo && (
+                <div className="flex items-center justify-between px-3 py-2 mb-2 bg-violet-50 rounded-xl border border-violet-200">
+                    <div className="border-l-2 border-violet-500 pl-2 min-w-0">
+                        <p className="text-xs text-violet-600 font-medium">
+                            {replyingTo.sender?.name}
+                        </p>
+
+                        <p className="text-xs text-slate-500 truncate">
+                            {replyingTo.messageType === "image"
+                                ? "📷 Photo"
+                                : replyingTo.messageType === "pdf"
+                                    ? "📄 PDF"
+                                    : replyingTo.messageType === "file"
+                                        ? "📁 File"
+                                        : replyingTo.content}
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => setReplyingTo(null)}
+                        className="text-slate-400 hover:text-slate-600 ml-2"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             {/* Input */}
             <div className="p-3 bg-white border-t border-slate-200 shrink-0">

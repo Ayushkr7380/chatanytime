@@ -23,6 +23,7 @@ import { useDeleteMessageForEveryone } from "@/hooks/useDeleteMessageForEveryone
 import { useEditMessage } from "@/hooks/useEditMessage";
 import { GrAttachment } from "react-icons/gr";
 
+
 export default function Chat() {
 
     const bottomRef = useRef(null);
@@ -45,6 +46,8 @@ export default function Chat() {
     const [selectedMessages, setSelectedMessages] = useState([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [editingMessage, setEditingMessage] = useState(null);
+
+    const [replyingTo, setReplyingTo] = useState(null);
 
     const currentChat = chats.find((chat) => chat._id === chatId);
     const otherUser = currentChat?.users?.find((u) => u._id !== meData?.user?._id);
@@ -291,21 +294,17 @@ export default function Chat() {
     const messageValue = watch("content");
 
     const onSubmit = ({ content }) => {
-        if (editingMessage) {
-            editMessage(
-                { messageId: editingMessage.id, content },
-                {
-                    onSuccess: () => {
-                        setEditingMessage(null);
-                        reset();
-                    }
-                }
-            );
-        } else {
-            sendMessage({ content, chatId });
-            reset();
-        }
-    };
+    if (editingMessage) {
+        editMessage(
+            { messageId: editingMessage.id, content },
+            { onSuccess: () => { setEditingMessage(null); reset(); } }
+        );
+    } else {
+        sendMessage({ content, chatId, replyTo: replyingTo?._id });
+        setReplyingTo(null);
+        reset();
+    }
+};
 
     if (isLoading) {
         return (
@@ -450,11 +449,33 @@ export default function Chat() {
                         fileName={msg.fileName}
                         isSelected={selectedMessages.includes(msg._id)}
                         onSelect={handleSelectMessage}
+                        replyTo={msg.replyTo}
+                        onReply={(id) => {
+    const msg = messages.find(m => m._id === id);
+    setReplyingTo(msg);
+}}
                     />
                 ))}
                 {otherTyping && <TypingBubble />}
                 <div ref={bottomRef} />
             </div>
+
+            {replyingTo && (
+    <div className="flex items-center justify-between px-3 py-2 mb-2 bg-violet-50 rounded-xl border border-violet-200">
+        <div className="border-l-2 border-violet-500 pl-2 min-w-0">
+            <p className="text-xs text-violet-600 font-medium">
+                {replyingTo.sender?.name}
+            </p>
+            <p className="text-xs text-slate-500 truncate">
+                {replyingTo.messageType === "image" ? "📷 Photo" 
+                : replyingTo.messageType === "pdf" ? "📄 PDF"
+                : replyingTo.messageType === "file" ? "📁 File"
+                : replyingTo.content}
+            </p>
+        </div>
+        <button onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600 ml-2 shrink-0">✕</button>
+    </div>
+)}
 
             {/* Input Area */}
             {blockStatus?.isBlockedByMe ? (

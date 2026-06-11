@@ -1,7 +1,6 @@
 import { BsCheckAll } from "react-icons/bs";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { FaUserCircle, FaFilePdf, FaFile } from "react-icons/fa";
-import { IoMdDownload } from "react-icons/io";
 
 export const MessageBubble = ({
     text,
@@ -17,11 +16,14 @@ export const MessageBubble = ({
     messageId,
     isSelected = false,
     onSelect,
+    onReply,
+    replyTo
 }) => {
-
     const longPressTimer = useRef(null);
     const didLongPress = useRef(false);
     const touchMoved = useRef(false);
+    const swipeStartX = useRef(null);
+    const [swipeX, setSwipeX] = useState(0);
 
     if (messageType === "system") {
         return (
@@ -64,6 +66,23 @@ export const MessageBubble = ({
         onSelect?.(messageId);
     };
 
+    const handleSwipeStart = (e) => {
+        swipeStartX.current = e.clientX;
+    };
+
+    const handleSwipeMove = (e) => {
+        if (swipeStartX.current === null) return;
+        const diff = e.clientX - swipeStartX.current;
+        if (isSender && diff < 0 && Math.abs(diff) < 70) setSwipeX(diff);
+        if (!isSender && diff > 0 && Math.abs(diff) < 70) setSwipeX(diff);
+    };
+
+    const handleSwipeEnd = () => {
+        if (Math.abs(swipeX) > 40) onReply?.(messageId);
+        setSwipeX(0);
+        swipeStartX.current = null;
+    };
+
     const renderContent = () => {
         if (isDeleted) return <p className="break-words opacity-60 italic">{text}</p>;
 
@@ -86,12 +105,11 @@ export const MessageBubble = ({
                 />
             );
         }
-       
 
         if (messageType === "pdf") {
             return (
                 <a href={text} target="_blank" rel="noopener noreferrer"
-                    className="flex items.center gap-2 hover:opacity-80 transition-opacity">
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${isSender ? "bg-violet-500" : "bg-red-50"}`}>
                         <FaFilePdf className={`text-lg ${isSender ? "text-white" : "text-red-500"}`} />
                     </div>
@@ -99,7 +117,6 @@ export const MessageBubble = ({
                         <p className="text-xs font-medium truncate max-w-[140px]">{fileName || "Document.pdf"}</p>
                         <p className="text-[10px] opacity-60">PDF • Tap to download</p>
                     </div>
-                   
                 </a>
             );
         }
@@ -115,7 +132,6 @@ export const MessageBubble = ({
                         <p className="text-xs font-medium truncate max-w-[140px]">{fileName || "File"}</p>
                         <p className="text-[10px] opacity-60">Tap to download</p>
                     </div>
-                    
                 </a>
             );
         }
@@ -126,12 +142,14 @@ export const MessageBubble = ({
     return (
         <div
             className={`flex items-end ${isSender ? "justify-end" : "justify-start"} my-2`}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
+            onPointerDown={(e) => { handlePointerDown(); handleSwipeStart(e); }}
+            onPointerMove={(e) => { handlePointerMove(); handleSwipeMove(e); }}
+            onPointerUp={() => { handlePointerUp(); handleSwipeEnd(); }}
+            onPointerCancel={handleSwipeEnd}
             onContextMenu={handleContextMenu}
             onClick={handleClick}
         >
+            
             {isSelected && (
                 <div className="flex items-center mr-2">
                     <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center">
@@ -140,7 +158,6 @@ export const MessageBubble = ({
                 </div>
             )}
 
-            {/* Group chat — other user ki DP */}
             {!isSender && senderName && (
                 <div className="mr-1.5 shrink-0 mb-1">
                     {senderPic
@@ -151,7 +168,6 @@ export const MessageBubble = ({
             )}
 
             <div className={`flex flex-col max-w-[70%] ${isSender ? "items-end" : "items-start"}`}>
-                {/* Group chat sender name */}
                 {!isSender && senderName && (
                     <p className="text-[11px] font-semibold text-violet-500 mb-0.5 ml-1">{senderName}</p>
                 )}
@@ -160,13 +176,26 @@ export const MessageBubble = ({
                     className={`
                         px-3 py-2 rounded-2xl text-sm flex flex-col gap-1
                         transition-all duration-150
-                        ${isSender
-                            ? "bg-violet-600 text-white rounded-br-none"
-                            : "bg-white text-slate-800 rounded-bl-none shadow-sm"
-                        }
+                        ${isSender ? "bg-violet-600 text-white rounded-br-none" : "bg-white text-slate-800 rounded-bl-none shadow-sm"}
                         ${isSelected ? "opacity-75 scale-[0.97]" : ""}
                     `}
-                >
+                    style={{
+                        transform: `translateX(${swipeX}px)`,
+                        transition: swipeX === 0 ? "transform 0.25s ease" : "none",
+                    }}
+                >{replyTo && (
+    <div className={`text-xs rounded-xl px-2 py-1.5 mb-1 border-l-2 border-violet-400 ${isSender ? "bg-violet-500" : "bg-slate-100"}`}>
+        <p className={`font-semibold mb-0.5 ${isSender ? "text-violet-200" : "text-violet-500"}`}>
+            {replyTo.sender?.name}
+        </p>
+        <p className={`truncate ${isSender ? "text-violet-100" : "text-slate-500"}`}>
+            {replyTo.messageType === "image" ? "📷 Photo"
+            : replyTo.messageType === "pdf" ? "📄 PDF"
+            : replyTo.messageType === "file" ? "📁 File"
+            : replyTo.content}
+        </p>
+    </div>
+)}
                     {renderContent()}
 
                     {messageType !== "uploading" && (

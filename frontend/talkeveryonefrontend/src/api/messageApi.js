@@ -9,11 +9,23 @@ export const getMessages = async (chatId) => {
   return response.data.messages;
 };
 
-export const sendMessageApi = async ({ content, chatId, receiverId, files }) => {
+export const sendMessageApi = async ({
+  content,
+  chatId,
+  receiverId,
+  files,
+  replyTo
+}) => {
   const formData = new FormData();
+
   if (content) formData.append("content", content);
   if (chatId) formData.append("chatId", chatId);
   if (receiverId) formData.append("receiverId", receiverId);
+
+  if (replyTo) {
+    formData.append("replyTo", replyTo);
+  }
+
   if (files?.length) {
     files.forEach(file => formData.append("files", file));
   }
@@ -23,6 +35,7 @@ export const sendMessageApi = async ({ content, chatId, receiverId, files }) => 
     formData,
     { withCredentials: true }
   );
+
   return response.data;
 };
 

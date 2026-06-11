@@ -206,10 +206,9 @@ export const groupChat = async (req, res) => {
 
 export const sendMessages = async (req, res) => {
     try {
-        const { content, chatId, receiverId } = req.body;
+        const { content, chatId, receiverId, replyTo } = req.body;
         const files = req.files;
 
-        // content ya files — ek toh chahiye
         if (!content && (!files || files.length === 0)) {
             return res.status(400).json({
                 success: false,
@@ -305,9 +304,17 @@ export const sendMessages = async (req, res) => {
                     readBy: [req.user.id],
                     messageType,
                     fileName: file.originalname,
+                    replyTo: replyTo || null,
                 });
 
-                fileMessage = await fileMessage.populate("sender", "username email name");
+                fileMessage = await fileMessage.populate([
+                    { path: "sender", select: "username email name" },
+                    {
+                        path: "replyTo",
+                        select: "content sender messageType fileName",
+                        populate: { path: "sender", select: "name" }
+                    }
+                ]);
                 lastMessage = fileMessage;
 
                 io.to(chat._id.toString()).emit("receiveMessage", {
@@ -319,6 +326,7 @@ export const sendMessages = async (req, res) => {
                     readBy: fileMessage.readBy,
                     messageType: fileMessage.messageType,
                     fileName: fileMessage.fileName,
+                    replyTo: fileMessage.replyTo,
                 });
             }
         }
@@ -331,9 +339,17 @@ export const sendMessages = async (req, res) => {
                 chat: chat._id,
                 readBy: [req.user.id],
                 messageType: "user",
+                replyTo: replyTo || null,
             });
 
-            message = await message.populate("sender", "username email name");
+            message = await message.populate([
+                { path: "sender", select: "username email name" },
+                {
+                    path: "replyTo",
+                    select: "content sender messageType fileName",
+                    populate: { path: "sender", select: "name" }
+                }
+            ]);
             lastMessage = message;
 
             io.to(chat._id.toString()).emit("receiveMessage", {
@@ -344,6 +360,7 @@ export const sendMessages = async (req, res) => {
                 createdAt: message.createdAt,
                 readBy: message.readBy,
                 messageType: "user",
+                replyTo: message.replyTo,
             });
         }
 
@@ -462,6 +479,11 @@ export const getMessages = async (req, res) => {
         })
             .sort({ createdAt: 1 })
             .populate("sender", "email username name")
+            .populate({
+                path: "replyTo",
+                select: "content sender messageType fileName",
+                populate: { path: "sender", select: "name" }
+            })
             .populate({
                 path: "chat",
                 populate: [

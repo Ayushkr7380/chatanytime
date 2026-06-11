@@ -38,6 +38,11 @@ const messageSchema = new Schema({
     isEdited: {
         type: Boolean,
         default: false
+    },
+    replyTo: { 
+        type: Schema.Types.ObjectId,
+         ref: "Message",
+          default: null
     }
 
 

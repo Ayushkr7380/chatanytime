@@ -10,7 +10,7 @@ export const useSendMessage = () => {
   return useMutation({
     mutationFn: sendMessageApi,
 
-    onMutate: async ({ content, chatId, files }) => {
+    onMutate: async ({ content, chatId, files , replyTo}) => {
       if (files?.length) {
       
         const previousMessages = queryClient.getQueryData(["messages", chatId]);
@@ -24,6 +24,7 @@ export const useSendMessage = () => {
             readBy: [],
             optimistic: true,
             messageType: "uploading",
+            replyTo
           },
         ]);
         return { previousMessages };
