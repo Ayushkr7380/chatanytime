@@ -1,9 +1,10 @@
 import { useForm } from "react-hook-form";
 import { useLogin } from "@/hooks/useLogin";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
   const { mutate: login, isPending } = useLogin();
   const [showPw, setShowPw] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -54,7 +55,9 @@ export default function Login() {
             {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
           </div>
 
-          <Link to="/forgot-password" className="text-xs text-violet-600 text-right -mt-2">Forgot password?</Link>
+          <button onClick={() => navigate("/forgot-password")} className="text-sm text-violet-600 hover:underline">
+    Forgot password?
+</button>
 
           <button disabled={isPending} type="submit"
             className="w-full bg-violet-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors">
