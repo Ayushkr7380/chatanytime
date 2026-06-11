@@ -266,9 +266,19 @@ export default function Messages() {
                             <Link to={chatPath} onClick={handleItemClick}>
                                 <ItemMedia variant="image">
                                     {chat.isGroupChat ? (
-                                        <div className="h-12 w-12 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center">
-                                            <FaUsers className="text-violet-600 text-lg" />
-                                        </div>
+                                        chat.groupPic ? (
+                                            <img
+                                                src={chat.groupPic}
+                                                alt={chat.chatName}
+                                                width={48}
+                                                height={48}
+                                                className="h-12 w-12 rounded-full object-cover border-2 border-violet-200"
+                                            />
+                                        ) : (
+                                            <div className="h-12 w-12 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center">
+                                                <FaUsers className="text-violet-600 text-lg" />
+                                            </div>
+                                        )
                                     ) : (
                                         <img
                                             src={

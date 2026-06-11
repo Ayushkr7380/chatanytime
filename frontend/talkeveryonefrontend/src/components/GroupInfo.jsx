@@ -35,7 +35,7 @@ export default function GroupInfo() {
     const { mutate: uploadGroupPic, isPending: isUploadingPic } = useUploadGroupPic();
     const [newName, setNewName] = useState(group.chatName);
     const [newBio, setNewBio] = useState(group?.groupBio || "");
-    
+
     if (!chats) {
         return (
             <div className="w-full flex flex-col bg-slate-50" style={{ height: "var(--app-height)" }}>
@@ -50,7 +50,7 @@ export default function GroupInfo() {
             </div>
         );
     }
-    
+
 
     if (!group) {
         return (
@@ -173,9 +173,9 @@ export default function GroupInfo() {
 
                         {/* Bio */}
                         {(isAdmin || group.groupBio) && (
-                            <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+                            <div className="w-full">
                                 {editingBio ? (
-                                    <div className="flex items-center gap-2">
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
                                         <input
                                             autoFocus
                                             value={newBio}
@@ -202,13 +202,13 @@ export default function GroupInfo() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-between">
-                                        <p className={`text-sm ${group.groupBio ? "text-slate-700" : "text-slate-400 italic"}`}>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <p className={`text-xs ${group.groupBio ? "text-slate-500" : "text-slate-400 italic"}`}>
                                             {group.groupBio || "Add group description..."}
                                         </p>
                                         {isAdmin && (
                                             <button onClick={() => { setEditingBio(true); setNewBio(group.groupBio || ""); }}>
-                                                <MdEdit size={15} className="text-slate-400 hover:text-violet-600 ml-2 shrink-0" />
+                                                <MdEdit size={13} className="text-slate-400 hover:text-violet-600 shrink-0" />
                                             </button>
                                         )}
                                     </div>
