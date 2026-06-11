@@ -61,11 +61,6 @@ export default function Login() {
             {isPending ? "Signing in..." : "Login"}
           </button>
         </form>
-
-        <p className="text-xs text-slate-500 text-center">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-violet-600 font-medium">Register</Link>
-        </p>
       </div>
     </div>
   );

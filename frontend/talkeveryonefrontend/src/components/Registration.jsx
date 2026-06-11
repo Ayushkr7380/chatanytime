@@ -101,11 +101,6 @@ export default function Registration() {
             {isPending ? "Creating account..." : "Create account"}
           </button>
         </form>
-
-        <p className="text-xs text-slate-500 text-center">
-          Already have an account?{" "}
-          <Link to="/login" className="text-violet-600 font-medium">Login</Link>
-        </p>
       </div>
     </div>
   );

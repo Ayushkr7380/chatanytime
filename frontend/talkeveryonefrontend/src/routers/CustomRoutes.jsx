@@ -30,6 +30,8 @@ function CustomRoutes() {
                     path="/authentication"
                     element={<ToggleAuth />}
                 />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
             </Route>
 
             {/* Protected Routes */}
@@ -68,8 +70,7 @@ function CustomRoutes() {
                     <Route path="profile/info" element={<MyInfoPage />} />
                     <Route path="profile/privacy" element={<PrivacyPage />} />
                     <Route path="/profile/sessions" element={<SessionsPage />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+                    
 
                 </Route>
 
