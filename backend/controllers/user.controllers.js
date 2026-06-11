@@ -63,7 +63,7 @@ export const registerUser = async (req, res) => {
                 os: ua.os.name,
                 device: ua.device.type || "desktop",
             },
-            ipAddress: req.ip,
+            ipAddress: ip,
             location
         });
 
@@ -119,7 +119,7 @@ export const loginUser = async (req, res) => {
                 os: ua.os.name,
                 device: ua.device.type || "desktop",
             },
-            ipAddress: req.ip,
+            ipAddress: ip,
             location
         });
 
