@@ -25,6 +25,7 @@ export const MessageBubble = ({
     const swipeStartX = useRef(null);
     const [swipeX, setSwipeX] = useState(0);
 
+
     if (messageType === "system") {
         return (
             <div className="flex justify-center my-3">
@@ -72,13 +73,29 @@ export const MessageBubble = ({
 
     const handleSwipeMove = (e) => {
         if (swipeStartX.current === null) return;
+
         const diff = e.clientX - swipeStartX.current;
-        if (isSender && diff < 0 && Math.abs(diff) < 70) setSwipeX(diff);
-        if (!isSender && diff > 0 && Math.abs(diff) < 70) setSwipeX(diff);
+
+
+        if (Math.abs(diff) > 10) {
+            touchMoved.current = true;
+            clearTimeout(longPressTimer.current);
+        }
+
+        if (isSender && diff < 0) {
+            setSwipeX(Math.max(diff, -80));
+        }
+
+        if (!isSender && diff > 0) {
+            setSwipeX(Math.min(diff, 80));
+        }
     };
 
     const handleSwipeEnd = () => {
-        if (Math.abs(swipeX) > 40) onReply?.(messageId);
+        if (Math.abs(swipeX) > 35) {
+            onReply?.(messageId);
+        }
+
         setSwipeX(0);
         swipeStartX.current = null;
     };
@@ -149,7 +166,7 @@ export const MessageBubble = ({
             onContextMenu={handleContextMenu}
             onClick={handleClick}
         >
-            
+
             {isSelected && (
                 <div className="flex items-center mr-2">
                     <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center">
@@ -182,20 +199,21 @@ export const MessageBubble = ({
                     style={{
                         transform: `translateX(${swipeX}px)`,
                         transition: swipeX === 0 ? "transform 0.25s ease" : "none",
+                        touchAction: "pan-y",
                     }}
                 >{replyTo && (
-    <div className={`text-xs rounded-xl px-2 py-1.5 mb-1 border-l-2 border-violet-400 ${isSender ? "bg-violet-500" : "bg-slate-100"}`}>
-        <p className={`font-semibold mb-0.5 ${isSender ? "text-violet-200" : "text-violet-500"}`}>
-            {replyTo.sender?.name}
-        </p>
-        <p className={`truncate ${isSender ? "text-violet-100" : "text-slate-500"}`}>
-            {replyTo.messageType === "image" ? "📷 Photo"
-            : replyTo.messageType === "pdf" ? "📄 PDF"
-            : replyTo.messageType === "file" ? "📁 File"
-            : replyTo.content}
-        </p>
-    </div>
-)}
+                    <div className={`text-xs rounded-xl px-2 py-1.5 mb-1 border-l-2 border-violet-400 ${isSender ? "bg-violet-500" : "bg-slate-100"}`}>
+                        <p className={`font-semibold mb-0.5 ${isSender ? "text-violet-200" : "text-violet-500"}`}>
+                            {replyTo.sender?.name}
+                        </p>
+                        <p className={`truncate ${isSender ? "text-violet-100" : "text-slate-500"}`}>
+                            {replyTo.messageType === "image" ? "📷 Photo"
+                                : replyTo.messageType === "pdf" ? "📄 PDF"
+                                    : replyTo.messageType === "file" ? "📁 File"
+                                        : replyTo.content}
+                        </p>
+                    </div>
+                )}
                     {renderContent()}
 
                     {messageType !== "uploading" && (
