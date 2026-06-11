@@ -81,8 +81,7 @@ users.pre("save", async function (next) {
 });
 
 
-users.methods = {
-    generateJWTToken: async function (sessionId) {
+users.methods.generateJWTToken =  async function (sessionId) {
         return await jwt.sign({
             id: this._id,
             name: this.name,
@@ -93,11 +92,11 @@ users.methods = {
             {
                 expiresIn: process.env.JWT_EXPIRY
             })
-    },
+}
 
-    comparePassword: async function (password) {
+users.methods.comparePassword =  async function (password) {
         return await bcrypt.compare(password, this.password);
     }
-}
+
 
 export const User = model("User", users);
