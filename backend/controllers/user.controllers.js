@@ -2,6 +2,10 @@ import { User } from "../models/users.model.js";
 import { io } from "../app.js";
 import { v2 as cloudinary } from "cloudinary";
 import fs from 'fs/promises';
+import { UAParser } from "ua-parser-js";
+import { Session } from "../models/session.model.js";
+import jwt from "jsonwebtoken";
+import { getLocation } from "../utils/getLocation.js";
 
 const cookieOptions = {
     httpOnly: true,
@@ -47,8 +51,23 @@ export const registerUser = async (req, res) => {
             })
         }
 
-        const token = await user.generateJWTToken();
+        const parser = new UAParser(req.headers["user-agent"]);
+        const ua = parser.getResult();
+        const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+        const location = await getLocation(ip);
 
+        const session = await Session.create({
+            userId: user._id,
+            deviceInfo: {
+                browser: ua.browser.name,
+                os: ua.os.name,
+                device: ua.device.type || "desktop",
+            },
+            ipAddress: req.ip,
+            location
+        });
+
+        const token = await user.generateJWTToken(session._id);
         res.cookie("token", token, cookieOptions);
 
 
@@ -88,8 +107,24 @@ export const loginUser = async (req, res) => {
             })
         }
 
-        const token = await user.generateJWTToken();
+        const parser = new UAParser(req.headers["user-agent"]);
+        const ua = parser.getResult();
+        const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+        const location = await getLocation(ip);
 
+        const session = await Session.create({
+            userId: user._id,
+            deviceInfo: {
+                browser: ua.browser.name,
+                os: ua.os.name,
+                device: ua.device.type || "desktop",
+            },
+            ipAddress: req.ip,
+            location
+        });
+
+
+        const token = await user.generateJWTToken(session._id);
         res.cookie("token", token, cookieOptions);
 
         user.password = undefined;
@@ -108,27 +143,71 @@ export const loginUser = async (req, res) => {
 
 }
 
+export const getActiveSessions = async (req, res) => {
+    try {
+        const sessions = await Session.find({ userId: req.user.id }).sort({ lastActive: -1 });
+        res.status(200).json({ success: true, sessions });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const logoutAll = async (req, res) => {
+    try {
+        await Session.deleteMany({ userId: req.user.id });
+        res.cookie("token", "", { httpOnly: true, sameSite: "None", expires: new Date(0), secure: true });
+        res.status(200).json({ success: true, message: "Logged out from all devices." });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const logoutParticularDevice = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await Session.findOne({ _id: sessionId, userId: req.user.id });
+        if (!session) return res.status(404).json({ success: false, message: "Session not found." });
+
+        await Session.findByIdAndDelete(sessionId);
+
+        const isCurrentDevice = sessionId === req.user.sessionId.toString();
+
+        if (isCurrentDevice) {
+            res.cookie("token", "", { httpOnly: true, sameSite: "None", expires: new Date(0), secure: true });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Device logged out.",
+            currentDevice: isCurrentDevice
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const logoutUser = async (req, res) => {
     try {
+        await Session.findByIdAndDelete(req.user.sessionId);
+
         res.cookie("token", "", {
             httpOnly: true,
             sameSite: "None",
             expires: new Date(0),
             secure: true
-        })
-
+        });
 
         res.status(200).json({
             success: true,
             message: "Logout Successfully."
-        })
+        });
     } catch (error) {
         return res.status(500).json({
             success: false,
             message: error.message
-        })
+        });
     }
-}
+};
 
 export const searchUser = async (req, res) => {
     try {
@@ -191,7 +270,8 @@ export const getUserData = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "user data fetched successfully",
-            user
+            user,
+            sessionId: req.user.sessionId
         })
 
     } catch (error) {
@@ -445,7 +525,7 @@ export const getUserById = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
     try {
-        const { name, username, bio ,profilePic } = req.body;
+        const { name, username, bio, profilePic } = req.body;
         const userId = req.user.id;
 
         if (username) {

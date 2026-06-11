@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById, updateProfile, uploadProfilePic, getBlockedUsers, updatePrivacy} from "../controllers/user.controllers.js";
+import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById, updateProfile, uploadProfilePic, getBlockedUsers, updatePrivacy, getActiveSessions, logoutAll, logoutParticularDevice} from "../controllers/user.controllers.js";
 import isLoggedIn from "../middlewares/isLoggedIn.js";
 import upload from "../middlewares/multer.middleware.js";
 
@@ -8,7 +8,15 @@ const router = Router();
 
 router.post("/registerUser",registerUser);
 router.post("/loginUser",loginUser);
+
+
 router.post("/logoutUser",isLoggedIn,logoutUser);
+router.get("/sessions", isLoggedIn, getActiveSessions);
+router.delete("/sessions/all", isLoggedIn, logoutAll);
+router.delete("/sessions/:sessionId", isLoggedIn, logoutParticularDevice);
+
+
+
 router.get("/searchUser",isLoggedIn,searchUser);
 
 

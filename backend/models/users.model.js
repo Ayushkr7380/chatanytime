@@ -80,12 +80,13 @@ users.pre("save", async function (next) {
 
 
 users.methods = {
-    generateJWTToken: async function () {
+    generateJWTToken: async function (sessionId) {
         return await jwt.sign({
             id: this._id,
             name: this.name,
             email: this.email,
-            username: this.username
+            username: this.username,
+             sessionId,
         }, process.env.JWT_KEY,
             {
                 expiresIn: process.env.JWT_EXPIRY
