@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser, searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById, updateProfile, uploadProfilePic, getBlockedUsers, updatePrivacy, getActiveSessions, logoutAll, logoutParticularDevice} from "../controllers/user.controllers.js";
+import { loginUser, logoutUser, registerUser, forgotPassword , resetPassword ,searchUser , getUserData, getUserStatus, blockUser, unblockUser, getBlockStatus, getUserById, updateProfile, uploadProfilePic, getBlockedUsers, updatePrivacy, getActiveSessions, logoutAll, logoutParticularDevice} from "../controllers/user.controllers.js";
 import isLoggedIn from "../middlewares/isLoggedIn.js";
 import upload from "../middlewares/multer.middleware.js";
 
@@ -8,6 +8,9 @@ const router = Router();
 
 router.post("/registerUser",registerUser);
 router.post("/loginUser",loginUser);
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 
 router.post("/logoutUser",isLoggedIn,logoutUser);

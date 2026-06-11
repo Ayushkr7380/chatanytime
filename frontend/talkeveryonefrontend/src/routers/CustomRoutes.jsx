@@ -17,6 +17,8 @@ import BlockedUsersPage from "@/components/BlockedUsersPage";
 import MyInfoPage from "@/components/MyInfoPage";
 import PrivacyPage from "@/components/PrivacyPage";
 import SessionsPage from "@/components/SessionsPage";
+import ForgotPassword from "@/components/ForgotPassword";
+import ResetPassword from "@/components/ResetPassword";
 
 function CustomRoutes() {
     return (
@@ -66,6 +68,8 @@ function CustomRoutes() {
                     <Route path="profile/info" element={<MyInfoPage />} />
                     <Route path="profile/privacy" element={<PrivacyPage />} />
                     <Route path="/profile/sessions" element={<SessionsPage />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
                 </Route>
 

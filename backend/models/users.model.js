@@ -65,6 +65,8 @@ const users = new Schema({
     nameUpdatedAt: { type: Date, default: null },
     usernameUpdatedAt: { type: Date, default: null },
     bioUpdatedAt: { type: Date, default: null },
+    resetPasswordToken: { type: String, default: null },
+    
 }, {
     timestamps: true
 });
@@ -86,7 +88,7 @@ users.methods = {
             name: this.name,
             email: this.email,
             username: this.username,
-             sessionId,
+            sessionId,
         }, process.env.JWT_KEY,
             {
                 expiresIn: process.env.JWT_EXPIRY

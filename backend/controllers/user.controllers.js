@@ -6,6 +6,7 @@ import { UAParser } from "ua-parser-js";
 import { Session } from "../models/session.model.js";
 import jwt from "jsonwebtoken";
 import { getLocation } from "../utils/getLocation.js";
+import { sendPasswordResetEmail } from "../services/email.service.js";
 
 const cookieOptions = {
     httpOnly: true,
@@ -680,5 +681,59 @@ export const updatePrivacy = async (req, res) => {
             success: false,
             message: error.message,
         });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ success: false, message: "No account found with this email." });
+
+        const resetToken = jwt.sign(
+            { id: user._id },
+            process.env.JWT_KEY,
+            { expiresIn: "15m" }
+        );
+
+        user.resetPasswordToken = resetToken;
+        await user.save();
+
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+        await sendPasswordResetEmail(user.email, user.name, resetLink);
+
+        res.status(200).json({ success: true, message: "Reset link sent to your email." });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        
+        const decoded = jwt.verify(token, process.env.JWT_KEY);
+
+        const user = await User.findOne({
+            _id: decoded.id,
+            resetPasswordToken: token,
+        });
+
+        if (!user) return res.status(400).json({ success: false, message: "Invalid or expired reset link." });
+
+        user.password = newPassword;
+        user.resetPasswordToken = null;
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Password reset successfully." });
+
+    } catch (error) {
+        if (error.name === "TokenExpiredError") {
+            return res.status(400).json({ success: false, message: "Reset link has expired." });
+        }
+        res.status(500).json({ success: false, message: error.message });
     }
 };
