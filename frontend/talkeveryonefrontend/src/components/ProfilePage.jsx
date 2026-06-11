@@ -185,6 +185,17 @@ export default function ProfilePage() {
                         </div>
                         <span className="text-slate-400 text-xs">›</span>
                     </button>
+
+                    <button onClick={() => navigate("/profile/sessions")} className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center">
+                                <span className="text-violet-600 text-sm">📱</span>
+                            </div>
+                            <span className="text-sm text-slate-700">Active sessions</span>
+                        </div>
+                        <span className="text-slate-400 text-xs">›</span>
+                    </button>
+
                 </div>
 
                 <div className="px-4 py-4">

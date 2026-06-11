@@ -16,6 +16,7 @@ import ProfilePage from "@/components/ProfilePage";
 import BlockedUsersPage from "@/components/BlockedUsersPage";
 import MyInfoPage from "@/components/MyInfoPage";
 import PrivacyPage from "@/components/PrivacyPage";
+import SessionsPage from "@/components/SessionsPage";
 
 function CustomRoutes() {
     return (
@@ -64,6 +65,7 @@ function CustomRoutes() {
                     <Route path="profile/blocked" element={<BlockedUsersPage />} />
                     <Route path="profile/info" element={<MyInfoPage />} />
                     <Route path="profile/privacy" element={<PrivacyPage />} />
+                    <Route path="/profile/sessions" element={<SessionsPage />} />
 
                 </Route>
 
