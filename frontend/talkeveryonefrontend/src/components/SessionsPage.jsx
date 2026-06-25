@@ -1,26 +1,28 @@
 import { useNavigate } from "react-router-dom";
 import { IoArrowBack } from "react-icons/io5";
+import { Monitor, Smartphone, Tablet, Loader2 } from "lucide-react";
 import { useSessions } from "@/hooks/useSessions";
 import { useLogoutSession } from "@/hooks/useLogoutSession";
 import { useLogoutAll } from "@/hooks/useLogoutAll";
 import { useMe } from "@/hooks/useMe";
 
-const deviceIcon = (type) => {
-    if (type === "mobile") return "📱";
-    if (type === "tablet") return "📲";
-    return "💻";
+// Function to return React Icon component dynamically
+const getDeviceIcon = (type) => {
+    if (type === "mobile") return <Smartphone className="w-6 h-6 text-slate-600" />;
+    if (type === "tablet") return <Tablet className="w-6 h-6 text-slate-600" />;
+    return <Monitor className="w-6 h-6 text-slate-600" />;
 };
 
 export default function SessionsPage() {
     const navigate = useNavigate();
     const { data: meData } = useMe();
-   const currentSessionId = meData?.sessionId;
+    const currentSessionId = meData?.sessionId;
 
     const { data, isLoading } = useSessions();
 
-    console.log("session data : check 1 : ",data);
+    console.log("session data : check 1 : ", data);
     const sessions = data?.sessions || [];
-    console.log("session data : check 2 : ",sessions);
+    console.log("session data : check 2 : ", sessions);
 
     const { mutate: logoutOne, isPending: isLoggingOne } = useLogoutSession();
     const { mutate: logoutAll, isPending: isLoggingAll } = useLogoutAll();
@@ -47,7 +49,10 @@ export default function SessionsPage() {
                 </div>
 
                 {isLoading ? (
-                    <p className="text-center text-sm text-slate-400 mt-10">Loading sessions...</p>
+                    <div className="flex flex-col items-center justify-center mt-20 gap-2">
+                        <Loader2 className="w-6 h-6 text-violet-600 animate-spin" />
+                        <p className="text-sm text-slate-400">Loading sessions...</p>
+                    </div>
                 ) : (
                     <>
                         {/* Current device */}
@@ -56,19 +61,20 @@ export default function SessionsPage() {
                                 <p className="text-xs text-slate-400 uppercase tracking-wide px-5 mb-2">Current device</p>
                                 <div className="bg-white border-y border-slate-200 px-5 py-4">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-2xl">{deviceIcon(current.deviceInfo?.device)}</span>
+                                        <div className="p-2 bg-slate-100 rounded-lg">
+                                            {getDeviceIcon(current.deviceInfo?.device)}
+                                        </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-slate-800">
                                                 {current.deviceInfo?.browser} · {current.deviceInfo?.os}
                                             </p>
-                                
                                             <p className="text-xs text-slate-400">{current.ipAddress} · {current.location}</p>
                                             <div className="flex items-center gap-1 mt-1">
                                                 <div className="h-2 w-2 rounded-full bg-green-500" />
                                                 <p className="text-xs text-green-600">Active now</p>
                                             </div>
                                         </div>
-                                        <span className="text-xs bg-violet-100 text-violet-700 rounded-full px-2 py-0.5">This device</span>
+                                        <span className="text-xs bg-violet-100 text-violet-700 rounded-full px-2 py-0.5 font-medium">This device</span>
                                     </div>
                                 </div>
                             </div>
@@ -81,7 +87,9 @@ export default function SessionsPage() {
                                 <div className="bg-white border-y border-slate-200 divide-y divide-slate-100">
                                     {others.map(session => (
                                         <div key={session._id} className="flex items-center gap-3 px-5 py-4">
-                                            <span className="text-2xl">{deviceIcon(session.deviceInfo?.device)}</span>
+                                            <div className="p-2 bg-slate-100 rounded-lg">
+                                                {getDeviceIcon(session.deviceInfo?.device)}
+                                            </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-slate-800">
                                                     {session.deviceInfo?.browser} · {session.deviceInfo?.os}
@@ -94,9 +102,9 @@ export default function SessionsPage() {
                                             <button
                                                 onClick={() => logoutOne(session._id)}
                                                 disabled={isLoggingOne}
-                                                className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                                className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
                                             >
-                                                Log out
+                                                {isLoggingOne ? "Logging out..." : "Log out"}
                                             </button>
                                         </div>
                                     ))}
@@ -109,8 +117,9 @@ export default function SessionsPage() {
                             <button
                                 onClick={() => logoutAll()}
                                 disabled={isLoggingAll}
-                                className="w-full py-3 rounded-xl bg-red-50 border border-red-100 text-red-500 text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                                className="w-full py-3 rounded-xl bg-red-50 border border-red-100 text-red-500 text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                             >
+                                {isLoggingAll && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {isLoggingAll ? "Logging out..." : "Log out all devices"}
                             </button>
                         </div>

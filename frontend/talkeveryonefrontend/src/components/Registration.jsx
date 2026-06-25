@@ -2,6 +2,8 @@ import { useForm } from "react-hook-form";
 import { useRegister } from "@/hooks/useRegister";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { IoEye, IoEyeOff } from "react-icons/io5";
+import { MessageSquare, Loader2 } from "lucide-react"; 
 
 export default function Registration() {
   const { mutate: registerUser, isPending } = useRegister();
@@ -21,24 +23,25 @@ export default function Registration() {
   const strengthColor = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
 
   return (
-    <div className="min-h-14 bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-violet-200 rounded-2xl p-8 w-full max-w-sm flex flex-col gap-2">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white border border-violet-200 rounded-2xl p-8 w-full max-w-sm flex flex-col gap-2 mt-[-10vh]">
 
         {/* Brand */}
-        <div className="flex items-center gap-1 justify-center">
-          <div className="w-7 h-6 rounded-lg bg-violet-500 flex items-center justify-center">
-            <span className="text-white text-sm">💬</span>
+        <div className="flex items-center gap-1.5 justify-center">
+          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shadow-sm shadow-violet-200">
+            <MessageSquare className="w-4 h-4" />
           </div>
-          <span className="text-violet-700 font-medium">Chat Anytime</span>
+          <span className="text-violet-700 font-semibold tracking-wide text-sm">Chat Anytime</span>
         </div>
 
         <div className="text-center">
-          
-          <h2 className="text-xl font-medium text-slate-800 mt-2">Create account</h2>
-          
+          <h2 className="text-xl font-semibold text-slate-800">Create account</h2>
+          <p className="text-xs text-slate-400 mt-1">Join us to start chatting today</p>
         </div>
 
         <form onSubmit={handleSubmit((data) => registerUser(data))} className="flex flex-col gap-4">
+          
+          {/* Username & Name row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-slate-600">Username</label>
@@ -46,60 +49,77 @@ export default function Registration() {
                 type="text"
                 placeholder="@handle"
                 {...register("username", { required: "Required" })}
-                className="border border-violet-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50"
+                className="border border-violet-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
               />
               {errors.username && <p className="text-xs text-red-500">{errors.username.message}</p>}
             </div>
+            
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-slate-600">Name</label>
               <input
                 type="text"
                 placeholder="Full name"
                 {...register("name", { required: "Required" })}
-                className="border border-violet-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50"
+                className="border border-violet-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
               />
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
           </div>
 
+          {/* Email */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-600">Email</label>
             <input
               type="email"
               placeholder="you@example.com"
               {...register("email", { required: "Email is required" })}
-              className="border border-violet-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50"
+              className="border border-violet-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
             />
             {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
           </div>
 
+          {/* Password */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-slate-600">Password</label>
             <div className="relative">
               <input
                 type={showPw ? "text" : "password"}
                 placeholder="Min 6 characters"
-                {...register("password", { required: "Password is required", minLength: { value: 6, message: "Min 6 characters" } })}
-                onChange={(e) => { register("password").onChange(e); checkStrength(e.target.value); }}
-                className="w-full border border-violet-200 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50"
+                {...register("password", { 
+                  required: "Password is required", 
+                  minLength: { value: 6, message: "Min 6 characters" },
+                  onChange: (e) => checkStrength(e.target.value) // Clean onChange integration
+                })}
+                className="w-full border border-violet-100 rounded-xl px-3 py-2.5 pr-10 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 bg-slate-50 transition-all"
               />
-              <button type="button" onClick={() => setShowPw(p => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-400">
-                {showPw ? "🙈" : "👁️"}
+              <button 
+                type="button" 
+                onClick={() => setShowPw(p => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
+              >
+                {showPw ? <IoEyeOff size={16} /> : <IoEye size={16} />}
               </button>
             </div>
+            
+            {/* Password Strength Indicator */}
             <div className="flex gap-1 mt-1">
-              {[0,1,2,3].map(i => (
-                <div key={i} className={`h-1 flex-1 rounded-full ${i < strength ? strengthColor[strength-1] : "bg-violet-100"}`} />
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < strength ? strengthColor[strength - 1] : "bg-slate-100"}`} />
               ))}
             </div>
             {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
           </div>
 
-          <button disabled={isPending} type="submit"
-            className="w-full bg-violet-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors">
+          {/* Submit Button */}
+          <button 
+            disabled={isPending} 
+            type="submit"
+            className="w-full bg-violet-600 text-white py-2.5 mt-2 rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
             {isPending ? "Creating account..." : "Create account"}
           </button>
+          
         </form>
       </div>
     </div>

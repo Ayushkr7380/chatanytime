@@ -19,9 +19,9 @@ import { useChats } from "@/hooks/useChats";
 import { useDeleteMessageForMe } from "@/hooks/useDeleteMessageForMe";
 import { useDeleteMessageForEveryone } from "@/hooks/useDeleteMessageForEveryone";
 import { useEditMessage } from "@/hooks/useEditMessage";
+import { Image, FileText, Folder, Camera, Loader2, X } from "lucide-react"; 
 
 export default function GroupChat() {
-
     const bottomRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const navigate = useNavigate();
@@ -246,7 +246,6 @@ export default function GroupChat() {
                 chatId,
                 replyTo: replyingTo?._id
             });
-
             setReplyingTo(null);
             reset();
         }
@@ -283,30 +282,30 @@ export default function GroupChat() {
                         <p className="text-sm text-slate-600 font-medium">{selectedMessages.length} selected</p>
                         {isPending ? (
                             <div className="flex items-center gap-2 px-2">
-                                <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                                <span className="text-xs text-slate-500">Please wait...</span>
+                                <Loader2 className="h-4 w-4 text-violet-600 animate-spin" />
+                                <span className="text-xs text-slate-500 font-medium">Please wait...</span>
                             </div>
                         ) : (
                             <div className="flex gap-2 items-center">
                                 <div className="relative">
                                     <button
                                         onClick={() => setMenuOpen(prev => !prev)}
-                                        className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                        className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                                     >
                                         <BsThreeDotsVertical size={18} />
                                     </button>
                                     {menuOpen && (
-                                        <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border border-slate-100 w-44 z-50 overflow-hidden">
-                                            <button onClick={handleDeleteForMe} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                                        <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border border-slate-100 w-44 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                            <button onClick={handleDeleteForMe} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                                                 Delete for me
                                             </button>
                                             {allSelectedAreMine && !selectedMsg?.isDeleted && (
-                                                <button onClick={handleDeleteForEveryone} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                                                <button onClick={handleDeleteForEveryone} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                                                     Delete for everyone
                                                 </button>
                                             )}
                                             {isSingleSelected && allSelectedAreMine && !selectedMsg?.isDeleted && isSelectedMsgEditable && (
-                                                <button onClick={handleEditStart} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                                                <button onClick={handleEditStart} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                                                     Edit message
                                                 </button>
                                             )}
@@ -315,7 +314,7 @@ export default function GroupChat() {
                                 </div>
                                 <button
                                     onClick={() => { setSelectedMessages([]); setMenuOpen(false); }}
-                                    className="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm"
+                                    className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -323,15 +322,15 @@ export default function GroupChat() {
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 w-full">
                         <button onClick={() => navigate("/")} className="md:hidden p-2 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors shrink-0">
                             <IoArrowBack size={20} className="text-slate-700" />
                         </button>
-                        <div onClick={() => navigate(`/group/${chatId}/info`)} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0">
+                        <div onClick={() => navigate(`/group/${chatId}/info`)} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 rounded-xl px-2 py-1.5 transition-colors min-w-0 flex-1">
                             {currentChat?.groupPic ? (
                                 <img src={currentChat.groupPic} alt={groupName} className="h-10 w-10 rounded-full object-cover border-2 border-violet-200 shrink-0" />
                             ) : (
-                                <div className="h-10 w-10 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center shrink-0 shadow-sm">
                                     <FaUsers className="text-lg text-violet-600" />
                                 </div>
                             )}
@@ -344,7 +343,7 @@ export default function GroupChat() {
                 )}
             </div>
 
-            {/* Messages */}
+            {/* Messages Body container */}
             <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 bg-slate-50 no-scrollbar overflow-y-auto">
                 {messages?.map((msg) => {
                     const isSender = msg?.sender?._id === meData?.user?._id;
@@ -376,58 +375,59 @@ export default function GroupChat() {
                 <div ref={bottomRef} />
             </div>
 
+            {/* Reply Input Preview Bar */}
             {replyingTo && (
-                <div className="flex items-center justify-between px-3 py-2 mb-2 bg-violet-50 rounded-xl border border-violet-200">
+                <div className="flex items-center justify-between px-3 py-2 mx-3 mb-1 bg-violet-50 rounded-xl border border-violet-100 shadow-sm animate-in fade-in slide-in-from-bottom-1 duration-150">
                     <div className="border-l-2 border-violet-500 pl-2 min-w-0">
-                        <p className="text-xs text-violet-600 font-medium">
-                            {replyingTo.sender?.name}
-                        </p>
-
-                        <p className="text-xs text-slate-500 truncate">
-                            {replyingTo.messageType === "image"
-                                ? "📷 Photo"
-                                : replyingTo.messageType === "pdf"
-                                    ? "📄 PDF"
-                                    : replyingTo.messageType === "file"
-                                        ? "📁 File"
-                                        : replyingTo.content}
+                        <p className="text-[11px] text-violet-600 font-semibold">{replyingTo.sender?.name}</p>
+                        <p className="text-xs text-slate-500 truncate flex items-center gap-1 mt-0.5">
+                            {replyingTo.messageType === "image" ? (
+                                <><Camera size={12} className="text-slate-400" /> Photo</>
+                            ) : replyingTo.messageType === "pdf" ? (
+                                <><FileText size={12} className="text-slate-400" /> PDF</>
+                            ) : replyingTo.messageType === "file" ? (
+                                <><Folder size={12} className="text-slate-400" /> File</>
+                            ) : (
+                                replyingTo.content
+                            )}
                         </p>
                     </div>
-
                     <button
                         onClick={() => setReplyingTo(null)}
-                        className="text-slate-400 hover:text-slate-600 ml-2"
+                        className="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-violet-100 rounded-lg"
                     >
-                        ✕
+                        <X size={14} />
                     </button>
                 </div>
             )}
 
-            {/* Input */}
+            {/* Form Input Deck */}
             <div className="p-3 bg-white border-t border-slate-200 shrink-0">
                 {editingMessage && (
-                    <div className="flex items-center justify-between px-2 py-1 mb-2 bg-violet-50 rounded-xl border border-violet-200">
-                        <p className="text-xs text-violet-600">Editing message</p>
-                        <button onClick={handleCancelEdit} className="text-xs text-slate-500 hover:text-slate-700">Cancel</button>
+                    <div className="flex items-center justify-between px-3 py-1.5 mb-2 bg-violet-50 rounded-xl border border-violet-100">
+                        <p className="text-xs text-violet-600 font-medium">Editing message</p>
+                        <button onClick={handleCancelEdit} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">Cancel</button>
                     </div>
                 )}
 
                 {attachOpen && (
-                    <div className="flex gap-2 mb-2 px-1">
+                    <div className="flex gap-2 mb-3 px-1 animate-in slide-in-from-bottom-2 duration-200">
                         {[
-                            { ref: imageRef, accept: "image/*", label: "Image", bg: "bg-violet-50", icon: "🖼️" },
-                            { ref: pdfRef, accept: "application/pdf", label: "PDF", bg: "bg-red-50", icon: "📄" },
-                            { ref: fileRef, accept: "*", label: "File", bg: "bg-blue-50", icon: "📁" },
-                            { ref: cameraRef, accept: "image/*", capture: "environment", label: "Camera", bg: "bg-green-50", icon: "📷" },
+                            { ref: imageRef, accept: "image/*", label: "Image", bg: "bg-violet-50 text-violet-600", icon: <Image size={18} /> },
+                            { ref: pdfRef, accept: "application/pdf", label: "PDF", bg: "bg-red-50 text-red-500", icon: <FileText size={18} /> },
+                            { ref: fileRef, accept: "*", label: "File", bg: "bg-blue-50 text-blue-500", icon: <Folder size={18} /> },
+                            { ref: cameraRef, accept: "image/*", capture: "environment", label: "Camera", bg: "bg-green-50 text-green-600", icon: <Camera size={18} /> },
                         ].map(({ ref, accept, capture, label, bg, icon }) => (
                             <button
                                 key={label}
                                 type="button"
                                 onClick={() => ref.current?.click()}
-                                className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl ${bg}`}
+                                className={`flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-xl transition-transform active:scale-95 ${bg}`}
                             >
-                                <span className="text-lg">{icon}</span>
-                                <span className="text-[10px] text-slate-500">{label}</span>
+                                <div className="h-9 w-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
+                                    {icon}
+                                </div>
+                                <span className="text-[10px] font-medium text-slate-500">{label}</span>
                                 <input
                                     ref={ref}
                                     type="file"
@@ -446,12 +446,13 @@ export default function GroupChat() {
                     <button
                         type="button"
                         onClick={() => setAttachOpen(prev => !prev)}
-                        className={`h-10 w-10 flex items-center justify-center rounded-xl transition-colors shrink-0 ${attachOpen ? "bg-violet-100 text-violet-600" : "text-slate-400 hover:text-slate-600"}`}
+                        className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all shrink-0 ${attachOpen ? "bg-violet-100 text-violet-600 rotate-45" : "text-slate-400 hover:text-slate-600 bg-slate-50"}`}
                     >
-                        <GrAttachment size={18} />
+                        <GrAttachment size={16} />
                     </button>
                     <input
                         type="text"
+                        autoComplete="off"
                         placeholder={editingMessage ? "Edit message..." : "Type a message..."}
                         {...register("content")}
                         onChange={(e) => { register("content").onChange(e); if (!editingMessage) handleTyping(); }}
@@ -460,9 +461,9 @@ export default function GroupChat() {
                     <button
                         type="submit"
                         disabled={!messageValue?.trim()}
-                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 shrink-0"
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 transition-all active:scale-95 shrink-0 shadow-sm shadow-violet-100"
                     >
-                        <IoSend size={16} />
+                        <IoSend size={14} />
                     </button>
                 </form>
             </div>

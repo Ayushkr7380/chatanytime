@@ -17,9 +17,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChatApi, clearChatApi } from "@/api/chatApi";
 import { MdDelete } from "react-icons/md";
 import { BsThreeDotsVertical } from "react-icons/bs";
+import { Camera, FileText, Folder, Loader2 } from "lucide-react"; 
 
 export default function Messages() {
-
     const location = useLocation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -31,7 +31,6 @@ export default function Messages() {
     const longPressTimer = useRef(null);
     const didLongPress = useRef(false);
     const touchMoved = useRef(false);
-
 
     const selectedChatObj = chats?.find(c => c._id === selectedChat);
 
@@ -98,7 +97,6 @@ export default function Messages() {
         setSelectedChat(chatId);
     };
 
-
     const handleCancel = () => {
         setSelectedChat(null);
         setModalOpen(false);
@@ -122,7 +120,7 @@ export default function Messages() {
 
     if (isError) {
         return (
-            <div className="flex items-center justify-center h-full text-red-500">
+            <div className="flex items-center justify-center h-full text-red-500 font-medium py-10">
                 Failed to load chats
             </div>
         );
@@ -130,7 +128,7 @@ export default function Messages() {
 
     if (!chats?.length) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-center px-6">
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 py-20">
                 <h3 className="font-semibold text-slate-700">No conversations yet</h3>
                 <p className="text-sm text-slate-500 mt-1">
                     Start a new chat by clicking the + button
@@ -151,7 +149,6 @@ export default function Messages() {
         return date.toLocaleDateString([], { day: "numeric", month: "short" });
     };
 
-
     const getLatestMessageText = (chat) => {
         const entry = chat.deletedFor?.find(
             d => d.userId === meData?.user?._id
@@ -168,33 +165,33 @@ export default function Messages() {
         const msg = chat.latestMessage;
         if (!msg) return chat.isGroupChat ? "Group created" : "Start chatting...";
 
-        if (msg.messageType === "image") return "📷 Image";
-        if (msg.messageType === "pdf") return "📄 " + (msg.fileName || "PDF");
-        if (msg.messageType === "file") return "📁 " + (msg.fileName || "File");
+        // Handled dynamic icon styling for inline attachments
+        if (msg.messageType === "image") return <span className="flex items-center gap-1"><Camera size={14} className="text-slate-400 shrink-0" /> Image</span>;
+        if (msg.messageType === "pdf") return <span className="flex items-center gap-1"><FileText size={14} className="text-slate-400 shrink-0" /> {msg.fileName || "PDF"}</span>;
+        if (msg.messageType === "file") return <span className="flex items-center gap-1"><Folder size={14} className="text-slate-400 shrink-0" /> {msg.fileName || "File"}</span>;
 
         return msg.content || (chat.isGroupChat ? "Group created" : "Start chatting...");
     };
+
     return (
         <div className="p-2">
 
-
+            {/* Selected Header Action Top Bar */}
             {selectedChat && (
-                <div className="flex items-center justify-between px-2 py-2 mb-2 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between px-3 py-2 mb-2 bg-slate-50 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
                     <p className="text-sm text-slate-600 font-medium">1 selected</p>
 
                     {isDeleting || isClearing ? (
-
                         <div className="flex items-center gap-2 px-2">
-                            <div className="h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                            <span className="text-xs text-slate-500">Please wait...</span>
+                            <Loader2 className="h-4 w-4 text-violet-600 animate-spin" />
+                            <span className="text-xs text-slate-500 font-medium">Please wait...</span>
                         </div>
                     ) : (
-
                         <div className="flex gap-2 items-center">
                             <div className="relative">
                                 <button
                                     onClick={() => setModalOpen(prev => !prev)}
-                                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
                                 >
                                     <BsThreeDotsVertical size={18} />
                                 </button>
@@ -203,14 +200,14 @@ export default function Messages() {
                                     <div className="absolute right-0 top-10 bg-white rounded-xl shadow-lg border border-slate-100 w-36 z-50 overflow-hidden">
                                         <button
                                             onClick={() => clearChat(selectedChat)}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                         >
                                             Clear Chat
                                         </button>
                                         {!selectedChatObj?.isGroupChat && (
                                             <button
                                                 onClick={() => deleteChat(selectedChat)}
-                                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                                                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium"
                                             >
                                                 Delete Chat
                                             </button>
@@ -222,7 +219,7 @@ export default function Messages() {
                             {!selectedChatObj?.isGroupChat && (
                                 <button
                                     onClick={() => deleteChat(selectedChat)}
-                                    className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200"
+                                    className="p-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
                                 >
                                     <MdDelete size={20} />
                                 </button>
@@ -230,7 +227,7 @@ export default function Messages() {
 
                             <button
                                 onClick={handleCancel}
-                                className="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm"
+                                className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium transition-colors"
                             >
                                 Cancel
                             </button>
@@ -239,13 +236,12 @@ export default function Messages() {
                 </div>
             )}
 
+            {/* Chat List Items */}
             <ItemGroup className="gap-1">
                 {chats.map((chat) => {
                     const otherUser = chat.users.find(u => u._id !== meData?.user?._id);
                     const chatPath = chat.isGroupChat ? `/group/${chat._id}` : `/chat/${chat._id}`;
                     const isActive = location.pathname === chatPath;
-
-
 
                     return (
                         <Item
@@ -275,7 +271,7 @@ export default function Messages() {
                                                 className="h-12 w-12 rounded-full object-cover border-2 border-violet-200"
                                             />
                                         ) : (
-                                            <div className="h-12 w-12 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center">
+                                            <div className="h-12 w-12 rounded-full bg-violet-100 border-2 border-violet-200 flex items-center justify-center shadow-sm">
                                                 <FaUsers className="text-violet-600 text-lg" />
                                             </div>
                                         )
@@ -296,7 +292,7 @@ export default function Messages() {
 
                                 <ItemContent className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                        <ItemTitle className="text-slate-800 font-semibold truncate">
+                                        <ItemTitle className="text-slate-800 font-semibold truncate text-sm">
                                             {chat.isGroupChat ? chat.chatName : otherUser?.name}
                                         </ItemTitle>
                                         <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
@@ -304,13 +300,13 @@ export default function Messages() {
                                                 {formatChatTime(chat.updatedAt)}
                                             </ItemDescription>
                                             {chat.unreadCount > 0 && (
-                                                <span className="bg-violet-600 text-white text-xs rounded-full px-2 py-0.5 leading-none">
+                                                <span className="bg-violet-600 text-white text-xs font-semibold rounded-full px-2 py-0.5 leading-none min-w-[18px] text-center">
                                                     {chat.unreadCount}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-                                    <ItemDescription className="text-sm text-slate-500 truncate mt-1">
+                                    <ItemDescription className="text-sm text-slate-500 truncate mt-0.5 flex items-center">
                                         {getLatestMessageText(chat)}
                                     </ItemDescription>
                                 </ItemContent>

@@ -7,7 +7,7 @@ import { useRemoveMember } from "@/hooks/useRemoveMember";
 import { useBlockUser } from "@/hooks/useBlockUser";
 import { useBlockStatus } from "@/hooks/useBlockStatus";
 import { useUnblockUser } from "@/hooks/useUnblockUser";
-
+import { MessageSquare, Shield, UserMinus, Ban, Loader2 } from "lucide-react";
 export default function MemberInfoSheet({
     open,
     onOpenChange,
@@ -41,7 +41,6 @@ export default function MemberInfoSheet({
         }
     };
 
-
     const handleMakeAdmin = () => {
         makeAdmin({ chatId, userId: member._id }, {
             onSuccess: () => onOpenChange(false)
@@ -60,39 +59,40 @@ export default function MemberInfoSheet({
         });
     };
 
+    // Array objects updated with dynamic icon component handling
     const actions = [
         {
             label: "Message",
-            icon: "💬",
+            icon: <MessageSquare size={16} className="text-violet-600" />,
             bg: "bg-violet-100",
-            color: "text-slate-700",
+            color: "text-slate-700 font-medium",
             onClick: handleMessage,
             show: true,
             loading: false,
         },
         {
             label: makingAdmin ? "Updating..." : "Make admin",
-            icon: "🛡️",
+            icon: <Shield size={16} className="text-violet-600" />,
             bg: "bg-violet-100",
-            color: "text-slate-700",
+            color: "text-slate-700 font-medium",
             onClick: handleMakeAdmin,
             show: isAdmin && member._id !== currentUserId,
             loading: makingAdmin,
         },
         {
             label: removingMember ? "Removing..." : "Remove from group",
-            icon: "👤",
+            icon: <UserMinus size={16} className="text-red-500" />,
             bg: "bg-red-100",
-            color: "text-red-500",
+            color: "text-red-500 font-medium",
             onClick: handleRemove,
             show: isAdmin && member._id !== currentUserId,
             loading: removingMember,
         },
         {
             label: blocking ? "Blocking..." : "Block user",
-            icon: "🚫",
+            icon: <Ban size={16} className="text-orange-600" />,
             bg: "bg-orange-100",
-            color: "text-slate-700",
+            color: "text-slate-700 font-medium",
             onClick: handleBlock,
             show:
                 member._id !== currentUserId &&
@@ -101,9 +101,9 @@ export default function MemberInfoSheet({
         },
         {
             label: unblocking ? "Unblocking..." : "Unblock user",
-            icon: "🚫",
+            icon: <Ban size={16} className="text-green-600" />,
             bg: "bg-green-100",
-            color: "text-slate-700",
+            color: "text-slate-700 font-medium",
             onClick: () =>
                 unblockUser(member._id, {
                     onSuccess: () => onOpenChange(false)
@@ -119,13 +119,13 @@ export default function MemberInfoSheet({
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/30 z-40"
+                className="fixed inset-0 bg-black/30 z-40 animate-in fade-in duration-200"
                 onClick={() => onOpenChange(false)}
             />
 
             {/* Bottom sheet */}
             <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
-                <div className="w-full max-w-md bg-white rounded-t-2xl pb-8 overflow-hidden">
+                <div className="w-full max-w-md bg-white rounded-t-2xl pb-8 overflow-hidden border border-slate-100 shadow-xl animate-in slide-in-from-bottom duration-200">
 
                     {/* Drag handle */}
                     <div className="flex justify-center pt-3 pb-1">
@@ -135,7 +135,7 @@ export default function MemberInfoSheet({
                     {/* Close button */}
                     <button
                         onClick={() => onOpenChange(false)}
-                        className="absolute top-3 right-4 p-1.5 rounded-full hover:bg-slate-100"
+                        className="absolute top-3 right-4 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
                     >
                         <IoClose size={18} className="text-slate-500" />
                     </button>
@@ -158,17 +158,21 @@ export default function MemberInfoSheet({
                         )}
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions Links Render */}
                     <div className="px-4 pt-3 space-y-1">
                         {actions.filter(a => a.show).map((action) => (
                             <button
                                 key={action.label}
                                 onClick={action.onClick}
                                 disabled={action.loading}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors ${action.loading ? "opacity-60" : ""}`}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-60`}
                             >
-                                <div className={`h-8 w-8 rounded-full ${action.bg} flex items-center justify-center text-sm shrink-0`}>
-                                    {action.icon}
+                                <div className={`h-8 w-8 rounded-full ${action.bg} flex items-center justify-center text-sm shrink-0 shadow-sm`}>
+                                    {action.loading ? (
+                                        <Loader2 size={14} className="animate-spin text-slate-600" />
+                                    ) : (
+                                        action.icon
+                                    )}
                                 </div>
                                 <span className={`text-sm ${action.color}`}>{action.label}</span>
                             </button>
